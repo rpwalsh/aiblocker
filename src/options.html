@@ -1,0 +1,127 @@
+<!--
+  Copyright (c) 2026 Ryan Walsh. All rights reserved.
+  Proprietary commercial software published for public reference only.
+  No license is granted to use, copy, modify, distribute, or create derivative works.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Content Blocker - Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>AI Content Blocker</h1>
+      <p>Identify AI-generated content with an orange border</p>
+    </div>
+
+    <div class="content">
+      <section class="section">
+        <h2>Detection</h2>
+        
+        <div class="option-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="enabled" checked>
+            <span>Enable Detection</span>
+          </label>
+          <p class="description">Turn AI content detection on/off</p>
+        </div>
+
+        <div class="option-group">
+          <label for="confidence">Sensitivity:</label>
+          <div class="slider-container">
+            <input type="range" id="confidence" min="0.3" max="0.9" step="0.1" value="0.5">
+            <span id="confidenceValue">50%</span>
+          </div>
+          <p class="description">Lower = catch more (may have false positives). Higher = stricter (may miss some).</p>
+        </div>
+
+        <div class="option-group">
+          <label for="blockingMode">On match:</label>
+          <select id="blockingMode">
+            <option value="none">Do nothing (badge only)</option>
+            <option value="blur">Blur</option>
+            <option value="watermark">Watermark</option>
+            <option value="hide">Hide</option>
+          </select>
+          <p class="description">Optional visual action to apply when content is detected. Default is badge only.</p>
+        </div>
+
+        <div class="option-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="blockImages" checked>
+            <span>Detect AI Images</span>
+          </label>
+          <p class="description">Scan images for AI generation signals</p>
+        </div>
+
+        <div class="option-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="blockText" checked>
+            <span>Detect AI Text</span>
+          </label>
+          <p class="description">Scan text for ChatGPT/LLM patterns</p>
+        </div>
+
+        <div class="option-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="blockVideo">
+            <span>Detect AI Video</span>
+          </label>
+          <p class="description">Analyze video elements for visible AI/deepfake signals. Off by default because it is heavier than image/text scanning.</p>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Crowd Learning</h2>
+        <div class="option-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="crowdLearningEnabled">
+            <span>Enable Crowd Learning</span>
+          </label>
+          <p class="description">Only sends explicit feedback to the endpoint below. Disabled by default.</p>
+        </div>
+        <div class="option-group">
+          <label for="crowdLearningEndpoint">Crowd Server Endpoint:</label>
+          <input type="text" id="crowdLearningEndpoint" placeholder="https://yourserver.com/api">
+          <p class="description">Leave blank to keep feedback local. Use only a local or trusted self-hosted instance.</p>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Exclusions</h2>
+        <div class="option-group">
+          <label for="whitelistedDomains">Skip these domains (one per line):</label>
+          <textarea id="whitelistedDomains" rows="4" placeholder="example.com&#10;mysite.org"></textarea>
+          <p class="description">The extension won't scan content on these sites</p>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>About</h2>
+        <p class="about-text">
+          AI Content Blocker identifies AI-generated images and text by analyzing 
+          metadata, URLs, and contextual signals. Detected content gets an orange 
+          border so you know what's real and what's AI.
+        </p>
+        <p class="version">Version 2.0.0</p>
+      </section>
+
+      <div class="button-group">
+        <button id="save" class="btn-save">Save Settings</button>
+        <button id="reset" class="btn-reset">Reset to Defaults</button>
+      </div>
+
+      <div class="status">
+        <p id="statusText"></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

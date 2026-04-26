@@ -1,0 +1,116 @@
+/*
+ * Copyright (c) 2026 Ryan Walsh. All rights reserved.
+ * Proprietary commercial software published for public reference only.
+ * No license is granted to use, copy, modify, distribute, or create derivative works.
+ */
+
+/* Content Script Styles */
+
+/* ========================================================================
+   Unified styling baseline
+   - Agent Orange overlays inject their own CSS, but we keep minimal safety
+     styles here for blocking modes (blur/hide/watermark) and z-index sanity.
+   ======================================================================== */
+
+.ai-blocked {
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-content-indicator {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: #ff6b6b;
+  color: white;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: bold;
+  border-radius: 4px;
+  z-index: 10000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Apply a consistent stacking context for marked elements */
+.ao-ai-content,
+.ao-noise-content {
+  position: relative;
+  z-index: 2147483640;
+}
+
+/* Ensure our image wrapper doesn't get buried under site overlays */
+.ao-image-wrapper {
+  z-index: 2147483640;
+}
+
+/* Blocking modes for unified pipeline (used by content.js + future AO mode) */
+.ai-blocked.blur {
+  filter: blur(8px) !important;
+  opacity: 0.6 !important;
+}
+
+/* Feedback controls inside Agent Orange tooltips.
+   OverlaySystem tooltips may use pointer-events: none, so we re-enable
+   interaction only for the buttons container. */
+.ao-feedback {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  pointer-events: auto;
+}
+
+.ao-feedback-btn {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ao-feedback-btn.secondary {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.ao-feedback-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.ao-feedback-flash {
+  outline: 2px solid rgba(255, 255, 255, 0.55);
+  outline-offset: 1px;
+}
+
+.ai-blocked.hidden {
+  display: none !important;
+}
+
+.ai-watermark {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  letter-spacing: 2px;
+  font-size: 18px;
+  color: rgba(255, 107, 107, 0.85);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  transform: rotate(-12deg);
+  z-index: 10001;
+}
+
+/* Hide AI-detected elements with smooth effect */
+.ai-blocked.hidden {
+  display: none;
+}
+
+/* Blur effect for preview */
+.ai-blocked.blur {
+  filter: blur(8px) !important;
+  opacity: 0.6 !important;
+}

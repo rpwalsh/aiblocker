@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.tmp/
+.chrome-profile/
+.env
+.dev-keys/
+data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.log
+

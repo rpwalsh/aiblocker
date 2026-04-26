@@ -1,0 +1,14 @@
+{
+  "name": "aiblocker-local-release",
+  "version": "2.0.0",
+  "author": "Ryan Walsh",
+  "license": "UNLICENSED",
+  "private": true,
+  "description": "Local-first AI content signal highlighter for manual Chrome installation.",
+  "scripts": {
+    "test": "node test/release-gates.test.js && node test/unit.test.js && node test/integration.test.js",
+    "release:check": "powershell -ExecutionPolicy Bypass -File scripts/test-release.ps1",
+    "install:local": "powershell -ExecutionPolicy Bypass -File scripts/install-local.ps1"
+  }
+}
+

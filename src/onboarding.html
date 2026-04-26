@@ -1,0 +1,205 @@
+<!--
+  Copyright (c) 2026 Ryan Walsh. All rights reserved.
+  Proprietary commercial software published for public reference only.
+  No license is granted to use, copy, modify, distribute, or create derivative works.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to AI Content Blocker Pro</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      max-width: 600px;
+      padding: 40px;
+      text-align: center;
+    }
+
+    .logo {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 16px;
+    }
+
+    .features {
+      text-align: left;
+      margin: 30px 0;
+      padding: 20px;
+      background: #f9f9f9;
+      border-radius: 8px;
+    }
+
+    .feature {
+      display: flex;
+      align-items: center;
+      margin: 15px 0;
+    }
+
+    .feature-icon {
+      font-size: 24px;
+      margin-right: 15px;
+      width: 30px;
+    }
+
+    .feature-text {
+      text-align: left;
+    }
+
+    .feature-text strong {
+      color: #333;
+      display: block;
+    }
+
+    .feature-text span {
+      color: #666;
+      font-size: 13px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 30px;
+    }
+
+    button {
+      flex: 1;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+      border: 1px solid #ddd;
+    }
+
+    .btn-secondary:hover {
+      background: #e8e8e8;
+    }
+
+    .pricing {
+      margin-top: 30px;
+      padding-top: 30px;
+      border-top: 1px solid #eee;
+    }
+
+    .pricing-note {
+      color: #666;
+      font-size: 13px;
+      margin-bottom: 15px;
+    }
+
+    .trial-badge {
+      display: inline-block;
+      background: #d4edda;
+      color: #155724;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">🚫</div>
+    <h1>Welcome to AI Content Blocker Pro</h1>
+    <p class="subtitle">Detect and block AI-generated content across the web</p>
+
+    <div class="trial-badge">
+      ✨ 30-Day Free Trial Active
+    </div>
+
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon">🎯</div>
+        <div class="feature-text">
+          <strong>Advanced Detection</strong>
+          <span>Multi-algorithm AI content detection</span>
+        </div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">📊</div>
+        <div class="feature-text">
+          <strong>Analytics Dashboard</strong>
+          <span>Track blocked content and statistics</span>
+        </div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">⚙️</div>
+        <div class="feature-text">
+          <strong>Custom Configuration</strong>
+          <span>Fine-tune detection with custom terms</span>
+        </div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🔒</div>
+        <div class="feature-text">
+          <strong>Privacy First</strong>
+          <span>All analysis happens locally on your device</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pricing">
+      <p class="pricing-note">
+        <strong>Free Plan:</strong> Basic detection • <strong>Pro Plan:</strong> Advanced ML + Analytics (Coming Soon)
+      </p>
+    </div>
+
+    <div class="actions">
+      <button class="btn-secondary" id="skipOnboarding" type="button">Skip for Now</button>
+      <button class="btn-primary" id="openOptions" type="button">Get Started</button>
+    </div>
+  </div>
+
+  <script src="onboarding.js"></script>
+</body>
+</html>

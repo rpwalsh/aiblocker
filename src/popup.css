@@ -1,0 +1,367 @@
+/*
+ * Copyright (c) 2026 Ryan Walsh. All rights reserved.
+ * Proprietary commercial software published for public reference only.
+ * No license is granted to use, copy, modify, distribute, or create derivative works.
+ */
+
+/* Popup Styles - AI Content Blocker Pro */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 380px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background: white;
+  color: #333;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 16px;
+  text-align: center;
+  position: relative;
+}
+
+.header h1 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.license-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.25);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.badge-text {
+  color: white;
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: #999;
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-btn.active {
+  color: #667eea;
+  border-bottom-color: #667eea;
+  background: white;
+}
+
+.tab-content {
+  display: none;
+  flex: 1;
+  padding: 16px;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.setting-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.setting-group-indent {
+  margin-left: 18px;
+}
+
+.toggle-label,
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  -webkit-user-select: none;
+  user-select: none;
+  gap: 10px;
+}
+
+.toggle-input,
+.checkbox-label input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  accent-color: #667eea;
+}
+
+.toggle-switch {
+  display: inline-block;
+  position: relative;
+  width: 40px;
+  height: 24px;
+  background-color: #ccc;
+  border-radius: 24px;
+  transition: background-color 0.3s;
+}
+
+.toggle-input:checked + .toggle-switch {
+  background-color: #667eea;
+}
+
+label {
+  font-size: 12px;
+  color: #555;
+  font-weight: 600;
+}
+
+.select-input {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+  background: white;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.select-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.slider-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+input[type="range"] {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: #ddd;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #667eea;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.4);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #667eea;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.4);
+}
+
+#confidenceValue {
+  font-weight: 600;
+  color: #667eea;
+  min-width: 35px;
+  text-align: right;
+  font-size: 12px;
+}
+
+.analytics {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.stat {
+  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+  padding: 12px;
+  border-radius: 8px;
+  text-align: center;
+  border: 1px solid #f0f0f0;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #667eea;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 10px;
+  color: #999;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-report {
+  width: 100%;
+  padding: 10px;
+  background: white;
+  color: #667eea;
+  border: 2px solid #667eea;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-report:hover {
+  background: #667eea10;
+}
+
+.footer {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+/* Details / learning panel */
+.details {
+  margin: 12px 16px 0 16px;
+  padding: 12px;
+  border: 1px solid #f0f0f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.details-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.details-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #444;
+}
+
+.btn-link {
+  border: none;
+  background: transparent;
+  color: #667eea;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+
+.details-body {
+  max-height: 140px;
+  overflow: auto;
+  border: 1px solid #f3f3f3;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 11px;
+  color: #555;
+  background: #fafafa;
+}
+
+.details-empty {
+  color: #888;
+  font-size: 11px;
+}
+
+.details-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.btn-small {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #667eea;
+  background: #667eea;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-small.btn-secondary {
+  background: #fff;
+  color: #667eea;
+}
+
+button {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-options,
+.btn-reload {
+  background: #667eea;
+  color: white;
+}
+
+.btn-options:hover,
+.btn-reload:hover {
+  background: #5568d3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+.status {
+  padding: 12px 16px;
+  border-top: 1px solid #f0f0f0;
+  background: #f9f9f9;
+  font-size: 11px;
+  color: #666;
+  text-align: center;
+}
+
+#statusText {
+  margin: 0;
+  font-size: 11px;
+}

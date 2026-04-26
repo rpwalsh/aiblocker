@@ -1,0 +1,23 @@
+{
+  "name": "aiblocker-crowd-server",
+  "version": "1.0.0",
+  "author": "Ryan Walsh",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "description": "Privacy-safe crowd learning service for AI Content Blocker Pro (votes -> aggregated feature weights).",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node src/index.js",
+    "migrate": "node src/migrate.js",
+  "sign": "node src/sign-model.js",
+  "selftest": "node src/selftest.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+  "better-sqlite3": "^11.5.0",
+    "pg": "^8.11.5"
+  }
+}

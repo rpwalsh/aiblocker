@@ -1,0 +1,287 @@
+/*
+ * Copyright (c) 2026 Ryan Walsh. All rights reserved.
+ * Proprietary commercial software published for public reference only.
+ * No license is granted to use, copy, modify, distribute, or create derivative works.
+ */
+
+/* Options Page Styles */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background: #f5f7fa;
+  color: #333;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  background: white;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.header p {
+  font-size: 14px;
+  opacity: 0.95;
+}
+
+.content {
+  flex: 1;
+  padding: 32px 24px;
+}
+
+.section {
+  margin-bottom: 32px;
+}
+
+.section h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #222;
+  border-bottom: 2px solid #667eea;
+  padding-bottom: 8px;
+}
+
+.option-group {
+  margin-bottom: 20px;
+}
+
+.option-group-indent {
+  margin-left: 18px;
+}
+
+.select-input {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #e1e1e1;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+}
+
+.text-input {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #e1e1e1;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+}
+
+.text-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  -webkit-user-select: none;
+  user-select: none;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.checkbox-label input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+  accent-color: #667eea;
+}
+
+label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 8px;
+}
+
+.description {
+  font-size: 13px;
+  color: #888;
+  margin-top: 6px;
+  margin-left: 0;
+}
+
+.ao-crowd-status {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 12px;
+  color: #444;
+  background: #fafafa;
+  border: 1px solid #e6e6e6;
+  border-radius: 8px;
+  padding: 10px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.slider-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+input[type="range"] {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: #ddd;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #667eea;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #667eea;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4);
+}
+
+#confidenceValue {
+  font-weight: 700;
+  color: #667eea;
+  min-width: 40px;
+  text-align: right;
+  font-size: 16px;
+}
+
+textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  resize: vertical;
+  background: #fafafa;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.about-text {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+.version {
+  font-size: 12px;
+  color: #999;
+  margin: 0;
+}
+
+.button-group {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+button {
+  flex: 1;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-save {
+  background: #667eea;
+  color: white;
+}
+
+.btn-save:hover {
+  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-reset {
+  background: #f0f0f0;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.btn-reset:hover {
+  background: #e8e8e8;
+  border-color: #999;
+}
+
+.status {
+  text-align: center;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 24px;
+  min-height: 24px;
+}
+
+.status.success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.status.error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+#statusText {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+}

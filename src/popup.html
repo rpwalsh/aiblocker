@@ -1,0 +1,113 @@
+<!--
+  Copyright (c) 2026 Ryan Walsh. All rights reserved.
+  Proprietary commercial software published for public reference only.
+  No license is granted to use, copy, modify, distribute, or create derivative works.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Content Blocker</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>AI Content Blocker</h1>
+    </div>
+
+    <div class="content">
+      <div class="settings">
+        <div class="setting-group main-toggle">
+          <label class="toggle-label">
+            <input type="checkbox" id="enabled" class="toggle-input">
+            <span class="toggle-switch"></span>
+            <span>Detection Enabled</span>
+          </label>
+        </div>
+
+        <div class="setting-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="blockImages">
+            <span>Scan Images</span>
+          </label>
+        </div>
+
+        <div class="setting-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="blockText">
+            <span>Scan Text</span>
+          </label>
+        </div>
+
+        <div class="setting-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="blockVideo">
+            <span>Scan Video</span>
+          </label>
+        </div>
+
+        <div class="setting-group">
+          <label for="confidence">Detection Confidence:</label>
+          <div class="slider-container">
+            <input type="range" id="confidence" min="0.3" max="0.9" step="0.1" value="0.5">
+            <span id="confidenceValue">50%</span>
+          </div>
+          <small>Lower = catch more, Higher = stricter</small>
+        </div>
+
+        <div class="setting-group">
+          <label for="blockingMode">On match:</label>
+          <select id="blockingMode" class="select">
+            <option value="none">Do nothing (badge only)</option>
+            <option value="blur">Blur</option>
+            <option value="watermark">Watermark</option>
+            <option value="hide">Hide</option>
+          </select>
+        </div>
+
+        <div class="setting-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="crowdLearningEnabled">
+            <span>Enable Crowd Learning</span>
+          </label>
+          <small>Uploads only explicit feedback (hashed feature IDs; no URLs/content)</small>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <span class="stat-value" id="statsDetected">0</span>
+          <span class="stat-label">AI items detected on page</span>
+        </div>
+      </div>
+
+      <div class="details" id="details">
+        <div class="details-header">
+          <span class="details-title">Why flagged</span>
+          <button id="refreshDetails" class="btn-link" type="button">Refresh</button>
+        </div>
+        <div class="details-body" id="detailsBody">
+          <div class="details-empty">Open a page and click an outlined item to see details here.</div>
+        </div>
+        <div class="details-actions">
+          <button id="voteAI" type="button" class="btn-small">Upvote AI</button>
+          <button id="voteNotAI" type="button" class="btn-small btn-secondary">Downvote Not AI</button>
+        </div>
+        <div class="details-actions">
+          <button id="toggleLearningMode" type="button" class="btn-small btn-secondary">Initialize Learning Mode</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <button id="openOptions" class="btn-options">Settings</button>
+      <button id="rescan" class="btn-rescan">Rescan Page</button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
