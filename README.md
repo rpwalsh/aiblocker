@@ -4,9 +4,9 @@ AI Content Blocker is a local-first Chrome extension that highlights likely AI-g
 
 ## Rights Notice
 
-Copyright (c) 2026 Ryan Walsh. All rights reserved.
+Copyright (c) 2026 Sarah Walsh. All rights reserved.
 
-This repository is published for public viewing and professional reference only. No license is granted to use, copy, modify, distribute, deploy, or create derivative works from this software without prior written permission from Ryan Walsh. This codebase is proprietary commercial software and is not open source. See [LICENSE.md](LICENSE.md).
+This repository is published for public viewing and professional reference only. No license is granted to use, copy, modify, distribute, deploy, or create derivative works from this software without prior written permission from Sarah Walsh. This codebase is proprietary commercial software and is not open source. See [LICENSE.md](LICENSE.md).
 
 The extension works as a signal highlighter: it looks for text, image, media provenance, metadata, and page-context indicators, then shows badges and optional visual treatments. It does not claim certainty. Treat every result as a lead to inspect, not a final judgment.
 
