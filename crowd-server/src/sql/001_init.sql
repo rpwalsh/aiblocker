@@ -1,4 +1,4 @@
--- Copyright (c) 2026 Ryan Walsh. All rights reserved.
+-- Copyright (c) 2026 Sarah Walsh. All rights reserved.
 -- Proprietary commercial software published for public reference only.
 -- No license is granted to use, copy, modify, distribute, or create derivative works.
 
