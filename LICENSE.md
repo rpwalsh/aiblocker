@@ -1,8 +1,8 @@
-Copyright (c) 2026 Sarah Walsh. All rights reserved.
+Copyright (c) 2026 Ryan P. Walsh. All rights reserved.
 
 This repository is published for public viewing and professional reference only.
 
-No license is granted to use, copy, modify, merge, distribute, sublicense, sell, deploy, or create derivative works from this software or its associated materials, in whole or in part, without prior written permission from Sarah Walsh.
+No license is granted to use, copy, modify, merge, distribute, sublicense, sell, deploy, or create derivative works from this software or its associated materials, in whole or in part, without prior written permission from Ryan P. Walsh.
 
 This codebase contains proprietary commercial software and is not open source.
 

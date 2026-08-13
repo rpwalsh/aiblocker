@@ -1,7 +1,7 @@
 {
   "name": "aiblocker-crowd-server",
   "version": "1.0.0",
-  "author": "Sarah Walsh",
+  "author": "Ryan P. Walsh",
   "license": "UNLICENSED",
   "private": true,
   "type": "module",
