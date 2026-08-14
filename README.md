@@ -2,6 +2,8 @@
 
 AI Content Blocker is a local-first Chrome extension that highlights likely AI-generated content on pages you browse. It is designed for manual installation from source, not Chrome Web Store distribution.
 
+![AI Content Blocker popup showing detection controls, confidence threshold, and crowd-learning feedback](docs/screenshots/popup.png)
+
 ## Rights Notice
 
 Copyright (c) 2026 Ryan P. Walsh. All rights reserved.
