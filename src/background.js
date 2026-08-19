@@ -868,11 +868,15 @@ function calculatePatternScore(content, type) {
   try {
     let score = 0;
     
-    // AI-related patterns
+    // AI-related patterns. [\s-]+ not \s+: the single most common
+    // real-world disclosure form is hyphenated ("AI-generated"), and a
+    // space-only separator scored it 0 on exactly the text this signal
+    // exists to catch -- verified live in the extension's own service
+    // worker (keywordScore 0.75, patternScore 0, no badge).
     const aiPatterns = [
-      /\b(generated|created|made)\s+(by|with|using)\s+(ai|ml|neural|gpt)/gi,
-      /\b(ai|artificial intelligence|machine learning)\s+(generated|created|made)\b/gi,
-      /\b(powered by|using)\s+(openai|anthropic|stability|midjourney)/gi
+      /\b(generated|created|made)[\s-]+(by|with|using)[\s-]+(ai|ml|neural|gpt)/gi,
+      /\b(ai|artificial intelligence|machine learning)[\s-]+(generated|created|made)\b/gi,
+      /\b(powered[\s-]+by|using)[\s-]+(openai|anthropic|stability|midjourney)/gi
     ];
     
     aiPatterns.forEach(pattern => {

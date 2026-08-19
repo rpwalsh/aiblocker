@@ -157,9 +157,20 @@ test.describe('Unit: scoring contract at default threshold', () => {
     test.assertTrue(score > DEFAULT_CONFIDENCE, `disclosure text must badge (got ${score.toFixed(3)})`);
   });
 
-  test.it('a bare quoted disclosure with no pattern corroboration does not badge', () => {
-    const score = finalScore('The phrase ai-generated appeared in the headline.', ['ai-generated']);
-    test.assertTrue(score <= DEFAULT_CONFIDENCE, `uncorroborated mention must not badge (got ${score.toFixed(3)})`);
+  test.it('the hyphenated real-world disclosure form badges at defaults', () => {
+    // "AI-generated" (hyphen) is the most common disclosure in the wild;
+    // a space-only pattern separator scored it 0 -- verified live.
+    const score = finalScore('This article was AI-generated as part of our automated content program.', ['ai-generated']);
+    test.assertTrue(score > DEFAULT_CONFIDENCE, `hyphenated disclosure must badge (got ${score.toFixed(3)})`);
+  });
+
+  test.it('a bare tool-name mention with no pattern corroboration does not badge', () => {
+    // Mentioning a tool is not disclosing generation: an article ABOUT
+    // Midjourney must not badge on the name alone. (The literal token
+    // "ai-generated" is inherently keyword+pattern at once, so it badges
+    // by design -- that is a disclosure string, not a mention.)
+    const score = finalScore('The artist discussed Midjourney at the conference last week.', ['ai-generated', 'midjourney']);
+    test.assertTrue(score <= DEFAULT_CONFIDENCE, `bare tool mention must not badge (got ${score.toFixed(3)})`);
   });
 
   test.it('plain human text does not badge at defaults', () => {
