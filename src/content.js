@@ -248,7 +248,7 @@ function scanImageProvenance(images) {
           (response) => {
             try {
               if (chrome.runtime.lastError) return;
-              if (response && response.isAiGenerated && response.confidence >= (settings.confidence || 0.7)) {
+              if (response && response.isAiGenerated && response.confidence >= (settings.confidence || 0.5)) {
                 blockElement(img, response, settings.blockingMode || 'none');
                 perfMetrics.elementsBlocked++;
               }
@@ -295,7 +295,7 @@ function scanVideoProvenance(videos) {
               if (settings.enableDeepfakeScan && typeof window.DeepfakeDetector === 'function') {
                 const detector = new window.DeepfakeDetector({
                   analysisDepth: 'basic',
-                  confidenceThreshold: settings.confidence || 0.7,
+                  confidenceThreshold: settings.confidence || 0.5,
                   enableBiometricAnalysis: false
                 });
 
@@ -310,7 +310,7 @@ function scanVideoProvenance(videos) {
                     analysis: { type: 'video', method: 'deepfake+hybrid', timestamp: Date.now() }
                   };
 
-                  if (combined.isAiGenerated && combined.confidence >= (settings.confidence || 0.7)) {
+                  if (combined.isAiGenerated && combined.confidence >= (settings.confidence || 0.5)) {
                     blockElement(video, combined, settings.blockingMode || 'none');
                     perfMetrics.elementsBlocked++;
                   }
@@ -318,7 +318,7 @@ function scanVideoProvenance(videos) {
                 }
               }
 
-              if (response && response.isAiGenerated && response.confidence >= (settings.confidence || 0.7)) {
+              if (response && response.isAiGenerated && response.confidence >= (settings.confidence || 0.5)) {
                 blockElement(video, response, settings.blockingMode || 'none');
                 perfMetrics.elementsBlocked++;
               }
@@ -429,7 +429,7 @@ function scanElements(elements) {
                   return;
                 }
                 
-                if (response && response.isAiGenerated && response.confidence >= (settings.confidence || 0.7)) {
+                if (response && response.isAiGenerated && response.confidence >= (settings.confidence || 0.5)) {
                   blockElement(element, response, settings.blockingMode || 'none');
                   perfMetrics.elementsBlocked++;
                 }

@@ -23,7 +23,21 @@ const DEFAULT_SETTINGS = {
   enabled: true,
   blockImages: true,
   blockText: true,
-  confidence: 0.7,
+  // 0.55, not 0.7: text scoring is keyword*0.4 + pattern*0.35 +
+  // structure*0.25, so without an explicit disclosure keyword the
+  // reachable maximum is 0.60 -- a 0.7 default made detection of
+  // UNDISCLOSED AI text mathematically impossible, which is the entire
+  // point of heuristic detection. 0.55 keeps keyword-only hits (0.40)
+  // below threshold while letting strong pattern+structure evidence badge.
+  // 0.5, not 0.7. The text scorer is keyword*0.4 + pattern*0.35 +
+  // structure*0.25 with component caps 1.0 / 0.9 / 1.0, so the ceiling
+  // WITHOUT an explicit disclosure keyword is 0.315 + 0.25 = 0.565: at the
+  // old 0.7 default, detection of undisclosed AI text was mathematically
+  // impossible, and even one disclosure hit plus every heuristic maxed
+  // reached only 0.685. 0.5 lets a single explicit disclosure (0.30) plus
+  // ordinary pattern evidence badge, and heuristic-only text must still be
+  // near its ceiling -- rich in AI patterns AND structure -- to cross.
+  confidence: 0.5,
   analyticsEnabled: true,
   licenseKey: null,
   licenseStatus: 'trial',
@@ -802,8 +816,15 @@ function analyzeContent(content, type = 'text', callback) {
         let patternScore = calculatePatternScore(contentLower, type);
         let structureScore = calculateStructureScore(content, type);
         
-        // Weighted combination
-        const finalScore = (keywordScore * 0.4) + (patternScore * 0.35) + (structureScore * 0.25);
+        // Weighted combination, plus corroboration: an explicit disclosure
+        // term CO-OCCURRING with generation-pattern language is near-certain
+        // AI content, while either signal alone stays sub-threshold (a news
+        // article merely quoting "ai-generated" should not auto-badge; the
+        // feedback buttons exist for the borderline). Without this, even
+        // disclosure + pattern scored 0.405 and could not reach the 0.5
+        // default.
+        const corroboration = keywordScore > 0 && patternScore > 0 ? 0.2 : 0;
+        const finalScore = Math.min(1, (keywordScore * 0.4) + (patternScore * 0.35) + (structureScore * 0.25) + corroboration);
         
         const matchedTerms = blockedTerms.filter(term => 
           typeof term === 'string' && contentLower.includes(term.toLowerCase())
@@ -847,8 +868,13 @@ function calculateKeywordScore(content, terms) {
     const validTerms = Array.isArray(terms) ? terms.filter(t => typeof t === 'string') : [];
     
     validTerms.forEach(term => {
+      // An explicit disclosure term ("ai-generated", "midjourney"...) is the
+      // highest-precision signal this scorer has; at 0.3 a single hit
+      // contributed 0.12 after weighting and even disclosure-bearing text
+      // could never reach the old 0.7 threshold. 0.75 makes one explicit
+      // disclosure decisive-but-not-certain, two conclusive.
       if (content.includes(term.toLowerCase())) {
-        score += 0.3;
+        score += 0.75;
       }
     });
     return Math.min(score, 1);
