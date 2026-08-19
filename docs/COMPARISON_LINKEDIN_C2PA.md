@@ -11,6 +11,8 @@ AI Content Blocker puts the **same badge-on-content experience** in the
 user's own browser — on every site, not one platform — and keeps working
 in the cases where disclosure-based labeling goes quiet.
 
+![AI Content Blocker flagging a real ad image at 73% confidence with named signals and one-click feedback — the reader-side counterpart of LinkedIn's CR provenance panel](screenshots/detection.png)
+
 ## What's the same
 
 | | LinkedIn "CR" badge | AI Content Blocker |
