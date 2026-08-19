@@ -4,6 +4,11 @@ AI Content Blocker is a local-first Chrome extension that highlights likely AI-g
 
 ![AI Content Blocker popup showing detection controls, confidence threshold, and crowd-learning feedback](docs/screenshots/popup.png)
 
+Familiar with LinkedIn's new "CR" badge on AI images? This is the same
+badge-on-content idea, applied reader-side across every site — including the
+unsigned content platform disclosure badges can't see. See
+[how it compares to LinkedIn's AI content badge](docs/COMPARISON_LINKEDIN_C2PA.md).
+
 ## Rights Notice
 
 Copyright (c) 2026 Ryan P. Walsh. All rights reserved.
