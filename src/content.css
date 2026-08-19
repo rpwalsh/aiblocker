@@ -13,14 +13,19 @@
    ======================================================================== */
 
 .ai-blocked {
+  /* No overflow:hidden here -- it clipped the indicator badge, which sits
+     above the element's border box. Blur/watermark modes don't need it. */
   position: relative;
-  overflow: hidden;
 }
 
 .ai-content-indicator {
+  /* Sits ABOVE the flagged element -- inside it at top:10px it painted over
+     the exact sentence it was labeling. */
   position: absolute;
-  top: 10px;
-  left: 10px;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 6px;
+  white-space: nowrap;
   background-color: #ff6b6b;
   color: white;
   padding: 8px 12px;
