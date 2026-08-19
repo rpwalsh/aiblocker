@@ -703,17 +703,34 @@ class BinaryForensics {
 
   checkAISignaturesInString(str, result, source) {
     const lowerStr = str.toLowerCase();
-    
+
+    // Sources that are raw byte-soup string extraction rather than parsed
+    // metadata fields. Substring matching here is where the false positives
+    // lived: two-letter signatures like "MJ" or "IF" match random binary
+    // constantly (a live capture badged an ad 73% on "AI signature in
+    // webp_scan: MJ" that could be any two bytes). In raw sources only
+    // distinctive multi-word signatures may match, and always on word
+    // boundaries.
+    const RAW_SCAN_SOURCES = ['webp_scan', 'gif', 'avif'];
+    const isRawScan = RAW_SCAN_SOURCES.includes(source);
+    const boundaryHit = (haystack, needle) => {
+      const escaped = needle.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return new RegExp(`(?:^|[^a-z0-9])${escaped}(?:[^a-z0-9]|$)`).test(haystack);
+    };
+    // Too short / too common to mean anything outside a structured field.
+    const AMBIGUOUS = new Set(['mj', 'if', 'nai', 'muse', 'parti', 'flux', 'comfy', 'sd3', 'glide', 'runway', 'leonardo', 'playground', 'firefly', 'imagen', 'cascade', 'a1111']);
+
     for (const sig of AI_SIGNATURES.exifSoftware) {
-      if (lowerStr.includes(sig.toLowerCase())) {
-        result.confidence += 0.7;
-        result.indicators.push({ 
-          indicator: `AI signature in ${source}: ${sig}`, 
-          confidence: 0.9 
-        });
-        result.forensics.aiTool = sig;
-        return; // One hit is enough
-      }
+      const lowerSig = sig.toLowerCase();
+      if (isRawScan && (AMBIGUOUS.has(lowerSig) || lowerSig.length <= 4)) continue;
+      if (!boundaryHit(lowerStr, sig)) continue;
+      result.confidence += 0.7;
+      result.indicators.push({
+        indicator: `AI signature in ${source}: ${sig}`,
+        confidence: 0.9
+      });
+      result.forensics.aiTool = sig;
+      return; // One hit is enough
     }
     
     // Check C2PA

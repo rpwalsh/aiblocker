@@ -448,6 +448,60 @@ test.describe('Unit: Error Handling', () => {
   });
 });
 
+
+// ============================================================================
+// SIGNATURE MATCHING (context-aware, word-boundary)
+// ============================================================================
+// The matcher used to be a bare substring scan over extracted bytes, so
+// two-letter signatures ("MJ", "IF") matched random binary constantly -- a
+// live capture badged an ad 73% on "AI signature in webp_scan: MJ". These
+// tests load the real checkAISignaturesInString body from the content script
+// (which cannot be require()d in node because it touches window at top
+// level) and pin the contract: raw-scan sources reject ambiguous/short
+// signatures entirely, every match is word-boundary, structured metadata
+// fields may still match short tool tags as whole tokens.
+test.describe('Unit: AI Signature Matching', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'content-agent-orange.js'), 'utf8');
+  const start = src.indexOf('checkAISignaturesInString(str, result, source) {');
+  const body = src.slice(start);
+  let depth = 0, end = body.indexOf('{');
+  for (let i = end; i < body.length; i++) {
+    if (body[i] === '{') depth++;
+    if (body[i] === '}') depth--;
+    if (!depth) { end = i + 1; break; }
+  }
+  const fnBody = body.slice(body.indexOf('{') + 1, end - 1).replaceAll('this.', '');
+  const SIGS = { exifSoftware: ['Midjourney', 'MJ', 'IF', 'DALL-E', 'Stable Diffusion'], c2paSignatures: [] };
+  const check = new Function('str', 'result', 'source', 'AI_SIGNATURES', fnBody + ';');
+  const hits = (str, source) => {
+    const r = { confidence: 0, indicators: [], forensics: {} };
+    try { check(str, r, source, SIGS); } catch (e) { /* helper refs past the sig loop */ }
+    return r.indicators.map(i => i.indicator);
+  };
+
+  test.it('raw byte scans never match two-letter signatures', () => {
+    test.assertEqual(hits('xx9fmjq7binary IF junk', 'webp_scan').length, 0, 'MJ/IF must not match raw bytes');
+  });
+
+  test.it('raw byte scans still match distinctive whole words', () => {
+    test.assertTrue(hits('made with midjourney v6', 'webp_scan').some(h => h.includes('Midjourney')), 'real tool name should match');
+  });
+
+  test.it('structured EXIF fields may match short tool tags as whole tokens', () => {
+    test.assertTrue(hits('software: MJ build 6', 'exif').some(h => h.includes('MJ')), 'whole-token MJ in EXIF should match');
+  });
+
+  test.it('no substring matches even in structured fields', () => {
+    test.assertEqual(hits('dmjpeg encoder pipeline', 'exif').length, 0, 'mj inside mjpeg must not match');
+  });
+
+  test.it('regex metacharacters in signatures are escaped', () => {
+    test.assertTrue(hits('created by dall-e 3', 'exif').some(h => h.includes('DALL-E')), 'DALL-E must match literally');
+  });
+});
+
 // ============================================================================
 // RUN TESTS
 // ============================================================================
