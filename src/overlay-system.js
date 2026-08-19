@@ -350,7 +350,7 @@ class OverlaySystem {
       pop.innerHTML = `
         <h3>Content Credentials</h3>
         ${provenanceLine}
-        <div class="ao-indicators">This image carries a signed C2PA manifest and was not flagged as AI-generated. Same "CR" convention platforms like LinkedIn use — verified in your own browser, on any site.</div>
+        <div class="ao-indicators">This image carries a signed C2PA manifest and was not flagged as AI-generated. Content Credentials verified locally, in your own browser, on any site.</div>
         <div class="ao-actions">
           <button class="ao-btn ao-btn-close">Close</button>
         </div>
