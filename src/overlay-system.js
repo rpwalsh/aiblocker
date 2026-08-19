@@ -139,6 +139,11 @@ class OverlaySystem {
         margin-bottom: 8px !important;
       }
 
+      .ao-popover .ao-provenance {
+        margin: 6px 0 2px;
+        font-size: 12px;
+        color: #ffb26b;
+      }
       .ao-popover .ao-indicators {
         font-size: 12px !important;
         opacity: 0.9 !important;
@@ -310,9 +315,26 @@ class OverlaySystem {
       .join('<br>&bull; ') || 'AI patterns detected';
     const featureIds = Array.isArray(result?.featureIds) ? result.featureIds : [];
 
+    // Provenance verdict: the reader-side answer to platform "CR" badges.
+    // Signed credentials, plain metadata, or nothing at all -- and "nothing
+    // at all" is stated as the suspicious condition it is, since stripping
+    // is exactly how AI content usually sheds its papers.
+    const f = result?.forensics || {};
+    const provenance = f.hasC2PA
+      ? '✓ Content Credentials (C2PA) present'
+      : (f.hasExif || f.hasXMP || f.hasIPTC)
+        ? '○ Metadata present, no AI credentials'
+        : (typeof f.hasExif !== 'undefined' || typeof f.hasXMP !== 'undefined')
+          ? '⚠ No provenance — metadata stripped'
+          : '';
+    const provenanceLine = provenance
+      ? `<div class="ao-provenance">${provenance}</div>`
+      : '';
+
     pop.innerHTML = `
       <h3>AI Content Detected</h3>
       <div class="ao-confidence">${confidence}%</div>
+      ${provenanceLine}
       <div class="ao-indicators">&bull; ${indicatorText}</div>
       
       <div class="ao-vote-section">

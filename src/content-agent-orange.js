@@ -322,7 +322,10 @@ class BinaryForensics {
       confidence: 0,
       format: null,
       indicators: [],
-      forensics: {},
+      // Explicit false defaults: the provenance verdict in the overlay
+      // distinguishes "analyzed, nothing found" (metadata stripped -- itself
+      // suspicious) from "never analyzed", which requires these to exist.
+      forensics: { hasExif: false, hasXMP: false, hasIPTC: false, hasC2PA: false },
     };
 
     // Detect format and analyze
@@ -442,6 +445,7 @@ class BinaryForensics {
       // C2PA check
       if (str.includes('c2pa') || str.includes('contentcredentials')) {
         result.confidence += 0.6;
+        result.forensics.hasC2PA = true;
         result.indicators.push({ indicator: 'C2PA Content Credentials detected', confidence: 0.9 });
       }
     }
@@ -737,6 +741,7 @@ class BinaryForensics {
     for (const sig of AI_SIGNATURES.c2paSignatures) {
       if (lowerStr.includes(sig.toLowerCase())) {
         result.confidence += 0.6;
+        result.forensics.hasC2PA = true;
         result.indicators.push({ 
           indicator: `C2PA/Content Credentials: ${sig}`, 
           confidence: 0.85 

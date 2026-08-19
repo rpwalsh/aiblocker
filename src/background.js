@@ -396,6 +396,32 @@ function migrateSettings() {
 }
 
 // Listen for messages from content scripts and popup
+// ============================================================================
+// SLOP METER: per-tab flagged-content count on the toolbar icon
+// ============================================================================
+// The popup already knows; the icon should too. Users get per-page AI
+// density at a glance -- the number of flagged items on THIS tab -- without
+// opening anything. Cleared on navigation and tab close.
+const tabFlagCounts = new Map();
+
+function bumpSlopMeter(tabId) {
+  if (typeof tabId !== 'number' || tabId < 0) return;
+  const next = (tabFlagCounts.get(tabId) || 0) + 1;
+  tabFlagCounts.set(tabId, next);
+  try {
+    chrome.action.setBadgeBackgroundColor({ tabId, color: '#e8590c' });
+    chrome.action.setBadgeText({ tabId, text: next > 99 ? '99+' : String(next) });
+  } catch (e) { /* tab may be gone */ }
+}
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.status === 'loading') {
+    tabFlagCounts.delete(tabId);
+    try { chrome.action.setBadgeText({ tabId, text: '' }); } catch (e) { /* ignore */ }
+  }
+});
+chrome.tabs.onRemoved.addListener((tabId) => tabFlagCounts.delete(tabId));
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   try {
     if (!request || typeof request !== 'object') {
@@ -503,6 +529,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       analyzeContent(request.content, request.type, (result) => {
         sendResponse(result);
+        if (result && result.isAiGenerated) bumpSlopMeter(sender?.tab?.id);
         if (request.url) {
           trackAnalytics(request.url, result, request.type);
         }
