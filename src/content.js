@@ -493,7 +493,8 @@ function blockElement(element, analysisResult, blockingMode = 'none') {
     icon.textContent = 'AI';
     const text = document.createElement('span');
     text.className = 'ai-text';
-    text.textContent = 'AI-Generated Content';
+    // Icon chip already reads "AI" -- repeating it here rendered "AIAI...".
+    text.textContent = 'Generated Content';
     const confidenceText = document.createElement('span');
     confidenceText.className = 'ai-confidence';
     confidenceText.textContent = `${confidence}%`;

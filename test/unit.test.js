@@ -501,6 +501,62 @@ test.describe('Unit: AI Signature Matching', () => {
 });
 
 // ============================================================================
+// C2PA PROVENANCE vs AI VERDICT (real function body)
+// ============================================================================
+// A signed credential used to add +0.6 AI confidence just for existing, so a
+// signed camera photo scored as AI for carrying its papers. The contract now:
+// presence sets forensics.hasC2PA with NO confidence bump (the UI shows a
+// neutral provenance badge instead); only an AI-tool marker or a
+// trainedAlgorithmicMedia assertion inside the credential is an AI verdict,
+// and that floors confidence at 0.85.
+test.describe('Unit: C2PA Provenance Split', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'content-agent-orange.js'), 'utf8');
+  const start = src.indexOf('checkAISignaturesInString(str, result, source) {');
+  const body = src.slice(start);
+  let depth = 0, end = body.indexOf('{');
+  for (let i = end; i < body.length; i++) {
+    if (body[i] === '{') depth++;
+    if (body[i] === '}') depth--;
+    if (!depth) { end = i + 1; break; }
+  }
+  const fnBody = body.slice(body.indexOf('{') + 1, end - 1).replaceAll('this.', '');
+  // Empty exifSoftware isolates the C2PA loop (tool names would match it first).
+  const SIGS = { exifSoftware: [], c2paSignatures: ['c2pa', 'contentcredentials', 'adobe:ai', 'openai:dall-e', 'midjourney'] };
+  const check = new Function('str', 'result', 'source', 'AI_SIGNATURES', fnBody + ';');
+  const run = (str) => {
+    const r = { confidence: 0, indicators: [], forensics: {} };
+    try { check(str, r, 'xmp', SIGS); } catch (e) { /* helper refs past the sig loops */ }
+    return r;
+  };
+
+  test.it('signed credential alone adds ZERO AI confidence', () => {
+    const r = run('urn:c2pa:manifest signed by camera vendor');
+    test.assertTrue(r.forensics.hasC2PA === true, 'hasC2PA must be set');
+    test.assertEqual(r.confidence, 0, 'presence must not score as AI');
+    test.assertTrue(!r.forensics.c2paAIAsserted, 'no AI assertion');
+  });
+
+  test.it('signed credential alone still surfaces a provenance indicator', () => {
+    const r = run('contentcredentials manifest v1');
+    test.assertTrue(r.indicators.some(i => i.indicator.includes('Signed Content Credentials')), 'neutral indicator expected');
+  });
+
+  test.it('AI-tool marker inside credential floors confidence at 0.85', () => {
+    const r = run('c2pa manifest generator openai:dall-e 3');
+    test.assertTrue(r.forensics.c2paAIAsserted === true, 'AI asserted');
+    test.assertTrue(r.confidence >= 0.85, 'confidence floored, got ' + r.confidence);
+  });
+
+  test.it('trainedAlgorithmicMedia assertion is an AI verdict', () => {
+    const r = run('c2pa digitalsourcetype trainedAlgorithmicMedia');
+    test.assertTrue(r.forensics.c2paAIAsserted === true, 'AI asserted');
+    test.assertTrue(r.confidence >= 0.85, 'confidence floored, got ' + r.confidence);
+  });
+});
+
+// ============================================================================
 // RUN TESTS
 // ============================================================================
 

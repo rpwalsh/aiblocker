@@ -31,6 +31,26 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
+/* Badge internals: icon chip, label, confidence -- spaced, not concatenated */
+.ai-indicator-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ai-icon {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+
+.ai-confidence {
+  opacity: 0.85;
+  font-weight: 600;
+}
+
 /* Apply a consistent stacking context for marked elements */
 .ao-ai-content,
 .ao-noise-content {

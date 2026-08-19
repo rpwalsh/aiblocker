@@ -83,6 +83,11 @@ class OverlaySystem {
         outline-offset: 2px !important;
       }
 
+      .ao-cr-content {
+        outline: 3px solid #1a7f37 !important;
+        outline-offset: 2px !important;
+      }
+
       .ao-badge {
         position: fixed !important;
         background: #ff6b00 !important;
@@ -104,6 +109,13 @@ class OverlaySystem {
       .ao-badge:hover {
         transform: scale(1.15) !important;
         background: #ff5500 !important;
+      }
+
+      .ao-badge.ao-badge-provenance {
+        background: #1a7f37 !important;
+      }
+      .ao-badge.ao-badge-provenance:hover {
+        background: #146c2e !important;
       }
 
       .ao-image-wrapper {
@@ -331,6 +343,20 @@ class OverlaySystem {
       ? `<div class="ao-provenance">${provenance}</div>`
       : '';
 
+    if (result && result.kind === 'provenance') {
+      // Neutral provenance popover: the image carries signed Content
+      // Credentials and was NOT flagged as AI -- so no confidence number
+      // and no detection-vote buttons; there is no AI verdict to vote on.
+      pop.innerHTML = `
+        <h3>Content Credentials</h3>
+        ${provenanceLine}
+        <div class="ao-indicators">This image carries a signed C2PA manifest and was not flagged as AI-generated. Same "CR" convention platforms like LinkedIn use — verified in your own browser, on any site.</div>
+        <div class="ao-actions">
+          <button class="ao-btn ao-btn-close">Close</button>
+        </div>
+        <div class="ao-status"></div>
+      `;
+    } else {
     pop.innerHTML = `
       <h3>AI Content Detected</h3>
       <div class="ao-confidence">${confidence}%</div>
@@ -355,6 +381,7 @@ class OverlaySystem {
       </div>
       <div class="ao-status"></div>
     `;
+    }
 
     // Position near badge
     const r = badge.getBoundingClientRect();
@@ -387,7 +414,7 @@ class OverlaySystem {
 
     pop.querySelector('.ao-btn-close').onclick = () => this.closePopover();
 
-    submitBtn.onclick = async () => {
+    if (submitBtn) submitBtn.onclick = async () => {
       if (!selectedVote) return;
       
       submitBtn.disabled = true;
@@ -443,9 +470,15 @@ class OverlaySystem {
 
   createBadge(targetId, result) {
     const badge = document.createElement('div');
-    badge.className = 'ao-badge';
-    badge.textContent = 'AI';
-    badge.title = 'Click for details';
+    // Two badge kinds: the orange AI-detection badge, and the green
+    // provenance badge for images carrying signed Content Credentials
+    // WITHOUT an AI assertion -- the reader-side counterpart of platform
+    // "CR" pins. A signed camera photo must never be labeled "AI", but its
+    // provenance is still worth surfacing.
+    const isProvenance = result && result.kind === 'provenance';
+    badge.className = isProvenance ? 'ao-badge ao-badge-provenance' : 'ao-badge';
+    badge.textContent = isProvenance ? 'CR' : 'AI';
+    badge.title = isProvenance ? 'Signed Content Credentials - click for details' : 'Click for details';
     badge.setAttribute('data-ao-target', targetId);
 
     badge.onclick = (ev) => {
@@ -486,7 +519,10 @@ class OverlaySystem {
     
     // Wrap image
     const wrapper = document.createElement('div');
-    wrapper.className = 'ao-image-wrapper ao-ai-content';
+    // Provenance-marked images get the green frame, not the AI-alarm orange.
+    wrapper.className = result && result.kind === 'provenance'
+      ? 'ao-image-wrapper ao-cr-content'
+      : 'ao-image-wrapper ao-ai-content';
     
     const targetId = this.generateId();
     wrapper.setAttribute('data-ao-id', targetId);

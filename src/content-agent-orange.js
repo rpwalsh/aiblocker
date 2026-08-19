@@ -325,7 +325,7 @@ class BinaryForensics {
       // Explicit false defaults: the provenance verdict in the overlay
       // distinguishes "analyzed, nothing found" (metadata stripped -- itself
       // suspicious) from "never analyzed", which requires these to exist.
-      forensics: { hasExif: false, hasXMP: false, hasIPTC: false, hasC2PA: false },
+      forensics: { hasExif: false, hasXMP: false, hasIPTC: false, hasC2PA: false, c2paAIAsserted: false },
     };
 
     // Detect format and analyze
@@ -399,6 +399,10 @@ class BinaryForensics {
       if (marker === 0xFFE1) {
         this.parseJPEGApp1(bytes, offset, length, result);
       }
+      // APP11 - JUMBF (C2PA manifest stores live here, not in APP1)
+      else if (marker === 0xFFEB) {
+        this.parseJPEGApp11(bytes, offset, length, result);
+      }
       // APP13 - IPTC/Photoshop
       else if (marker === 0xFFED) {
         this.parseJPEGApp13(bytes, offset, length, result);
@@ -428,6 +432,32 @@ class BinaryForensics {
     return result;
   }
 
+  // APP11 JUMBF: where C2PA actually embeds its manifest store in JPEG.
+  // The manifest is CBOR/JUMBF binary, but its label strings ('c2pa',
+  // 'contentauth', digitalsourcetype values) survive printable-string
+  // extraction. A manifest store spans MULTIPLE APP11 segments, so each is
+  // evaluated independently -- an AI assertion in a later segment must
+  // still land after presence was set by an earlier one.
+  parseJPEGApp11(bytes, offset, length, result) {
+    const data = bytes.slice(offset + 2, offset + length);
+    const str = this.extractStringsFromBytes(data).toLowerCase();
+
+    if ((str.includes('c2pa') || str.includes('contentauth')) && !result.forensics.hasC2PA) {
+      result.forensics.hasC2PA = true;
+      result.indicators.push({ indicator: 'Signed Content Credentials (C2PA) present', confidence: 0.85 });
+    }
+
+    if (result.forensics.hasC2PA && !result.forensics.c2paAIAsserted) {
+      const aiMarker = ['trainedalgorithmicmedia', 'adobe:ai', 'openai:dall-e', 'midjourney']
+        .find(m => str.includes(m));
+      if (aiMarker) {
+        result.forensics.c2paAIAsserted = true;
+        result.confidence = Math.max(result.confidence, 0.85);
+        result.indicators.push({ indicator: `C2PA credential asserts AI generation: ${aiMarker}`, confidence: 0.98 });
+      }
+    }
+  }
+
   parseJPEGApp1(bytes, offset, length, result) {
     const data = bytes.slice(offset + 2, offset + length);
     const str = this.extractStringsFromBytes(data);
@@ -442,11 +472,19 @@ class BinaryForensics {
       result.forensics.hasXMP = true;
       this.checkAISignaturesInString(str, result, 'xmp');
       
-      // C2PA check
+      // C2PA check. Presence of a signed credential is PROVENANCE, not AI
+      // evidence -- a signed camera photo must never score as AI for being
+      // signed. Only a trainedAlgorithmicMedia digitalsourcetype assertion
+      // inside the credential is an AI verdict, and that one is near-certain.
       if (str.includes('c2pa') || str.includes('contentcredentials')) {
-        result.confidence += 0.6;
         result.forensics.hasC2PA = true;
-        result.indicators.push({ indicator: 'C2PA Content Credentials detected', confidence: 0.9 });
+        if (str.toLowerCase().includes('trainedalgorithmicmedia')) {
+          result.forensics.c2paAIAsserted = true;
+          result.confidence = Math.max(result.confidence, 0.85);
+          result.indicators.push({ indicator: 'C2PA credential asserts AI generation (trainedAlgorithmicMedia)', confidence: 0.98 });
+        } else {
+          result.indicators.push({ indicator: 'Signed Content Credentials (C2PA) present', confidence: 0.85 });
+        }
       }
     }
     
@@ -737,15 +775,31 @@ class BinaryForensics {
       return; // One hit is enough
     }
     
-    // Check C2PA
+    // Check C2PA. Same split as the XMP path: a signed credential is
+    // provenance; only an AI-tool marker or trainedAlgorithmicMedia inside
+    // the credential turns it into an AI verdict.
+    const C2PA_AI_MARKERS = ['adobe:ai', 'openai:dall-e', 'midjourney'];
     for (const sig of AI_SIGNATURES.c2paSignatures) {
       if (lowerStr.includes(sig.toLowerCase())) {
-        result.confidence += 0.6;
         result.forensics.hasC2PA = true;
-        result.indicators.push({ 
-          indicator: `C2PA/Content Credentials: ${sig}`, 
-          confidence: 0.85 
-        });
+        // Scan the WHOLE credential for an AI assertion -- the generic
+        // 'c2pa' marker always matches first, so branching on sig alone
+        // would mask a tool marker sitting later in the same manifest.
+        const aiMarker = C2PA_AI_MARKERS.find(m => lowerStr.includes(m)) ||
+          (lowerStr.includes('trainedalgorithmicmedia') ? 'trainedAlgorithmicMedia' : null);
+        if (aiMarker) {
+          result.forensics.c2paAIAsserted = true;
+          result.confidence = Math.max(result.confidence, 0.85);
+          result.indicators.push({
+            indicator: `C2PA credential asserts AI generation: ${aiMarker}`,
+            confidence: 0.95
+          });
+        } else {
+          result.indicators.push({
+            indicator: `Signed Content Credentials (C2PA): ${sig}`,
+            confidence: 0.85
+          });
+        }
         return;
       }
     }
@@ -3141,10 +3195,13 @@ class AgentOrangeNuclear {
 
     this.imageResults.set(img, finalResult);
 
-    // Mark if above threshold
+    // Mark if above threshold; otherwise a signed image still gets the
+    // neutral provenance badge (the reader-side "CR" pin).
     if (totalConfidence >= this.settings.confidence) {
       this.stats.imagesDetected++;
       this.markImage(img, finalResult);
+    } else if (finalResult.forensics && finalResult.forensics.hasC2PA) {
+      this.markProvenance(img, finalResult);
     }
   }
 
@@ -3261,7 +3318,9 @@ class AgentOrangeNuclear {
   }
 
   handleStreamResult(url, result) {
-    if (!result.isAI || result.confidence < this.settings.confidence) return;
+    const flaggedAI = result.isAI && result.confidence >= this.settings.confidence;
+    const signedOnly = !flaggedAI && !!(result.forensics && result.forensics.hasC2PA);
+    if (!flaggedAI && !signedOnly) return;
 
     // Find images with this URL
     const images = document.querySelectorAll(`img[src="${url}"], img[data-src="${url}"]`);
@@ -3269,7 +3328,11 @@ class AgentOrangeNuclear {
       const existingResult = this.imageResults.get(img);
       if (!existingResult || result.confidence > existingResult.confidence) {
         this.imageResults.set(img, result);
-        this.markImage(img, result);
+        if (flaggedAI) {
+          this.markImage(img, result);
+        } else {
+          this.markProvenance(img, result);
+        }
       }
     }
   }
@@ -3282,6 +3345,22 @@ class AgentOrangeNuclear {
       seen.add(key);
       return true;
     }).slice(0, 10); // Max 10 indicators
+  }
+
+  // Neutral green "CR" badge for images carrying signed Content Credentials
+  // that were NOT flagged as AI -- provenance surfaced, no false AI verdict.
+  markProvenance(img, result) {
+    if (!this.overlaySystem || !img) return;
+    if (img.classList.contains('ao-image-overlay')) return;
+
+    this.overlaySystem.markImage(img, {
+      kind: 'provenance',
+      confidence: result.confidence,
+      indicators: result.indicators || [],
+      featureIds: [],
+      category: 'image',
+      forensics: result.forensics,
+    });
   }
 
   markImage(img, result) {
