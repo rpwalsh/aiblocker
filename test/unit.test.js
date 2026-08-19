@@ -176,48 +176,6 @@ test.describe('Unit: scoring contract at default threshold', () => {
 });
 
 // ============================================================================
-// UNIT TESTS: validateLicense
-// ============================================================================
-
-test.describe('Unit: License Key Validation', () => {
-  function isValidLicenseFormat(key) {
-    if (!key || typeof key !== 'string') return false;
-    return /^AIB-[A-Z0-9]{20}$/.test(key.toUpperCase());
-  }
-
-  test.it('rejects null key', () => {
-    test.assertFalse(isValidLicenseFormat(null), 'Null should be invalid');
-  });
-
-  test.it('rejects empty string', () => {
-    test.assertFalse(isValidLicenseFormat(''), 'Empty string should be invalid');
-  });
-
-  test.it('rejects invalid prefix', () => {
-    test.assertFalse(isValidLicenseFormat('KEY-12345678901234567890'), 'Invalid prefix should be rejected');
-  });
-
-  test.it('rejects wrong length', () => {
-    test.assertFalse(isValidLicenseFormat('AIB-12345'), 'Too short should be invalid');
-  });
-
-  test.it('accepts valid format', () => {
-    test.assertTrue(isValidLicenseFormat('AIB-ABCDEFGHIJKLMNOPQRST'), 'Valid format should be accepted');
-  });
-
-  test.it('accepts lowercase input', () => {
-    test.assertTrue(isValidLicenseFormat('aib-abcdefghijklmnopqrst'), 'Lowercase should be accepted');
-  });
-
-  test.it('rejects special characters', () => {
-    test.assertFalse(isValidLicenseFormat('AIB-ABC!@#$%^&*()[]{}'), 'Special chars should be rejected');
-  });
-
-  test.it('accepts numbers in key', () => {
-    test.assertTrue(isValidLicenseFormat('AIB-12345678901234567890'), 'Numbers should be valid');
-  });
-});
-
 // ============================================================================
 // UNIT TESTS: Domain Blocking
 // ============================================================================

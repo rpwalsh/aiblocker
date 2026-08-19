@@ -5,7 +5,7 @@
  */
 
 // Background service worker for AI Content Blocker Pro
-// Enterprise-grade detection, analytics, licensing, and sync
+// Detection, analytics, and sync (local-first; no licensing machinery -- proprietary code, published for reference)
 // Version 2.0.0 - Production Ready
 
 'use strict';
@@ -39,9 +39,6 @@ const DEFAULT_SETTINGS = {
   // near its ceiling -- rich in AI patterns AND structure -- to cross.
   confidence: 0.5,
   analyticsEnabled: true,
-  licenseKey: null,
-  licenseStatus: 'trial',
-  licenseTrialStart: null,
   blockedDomains: [],
   whitelistedDomains: [],
   // How (if at all) to visually modify detected content.
@@ -62,7 +59,6 @@ const DEFAULT_SETTINGS = {
 };
 
 // Trial period: 30 days in milliseconds
-const TRIAL_PERIOD = 30 * 24 * 60 * 60 * 1000;
 
 // Analytics tracking
 const analytics = {
@@ -188,7 +184,6 @@ chrome.runtime.onInstalled.addListener((details) => {
           if (Object.keys(items).length === 0) {
             const settings = {
               ...DEFAULT_SETTINGS,
-              licenseTrialStart: Date.now()
             };
             chrome.storage.sync.set(settings);
           }
@@ -388,7 +383,6 @@ function migrateSettings() {
             ...items, 
             ...DEFAULT_SETTINGS,
             version: '2.0.0',
-            licenseTrialStart: items.licenseTrialStart || Date.now()
           };
           chrome.storage.sync.set(updated);
         }
@@ -450,13 +444,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           if (typeof response.blockCanvas === 'undefined') response.blockCanvas = true;
           if (typeof response.goHard === 'undefined') response.goHard = false;
 
-          // Check trial expiration
-          if (response.licenseStatus === 'trial' && response.licenseTrialStart) {
-            const trialExpired = (Date.now() - response.licenseTrialStart) > TRIAL_PERIOD;
-            if (trialExpired) {
-              response.licenseStatus = 'trial_expired';
-            }
-          }
           sendResponse(response || DEFAULT_SETTINGS);
         } catch (e) {
           logError('getSettings failed', e);
@@ -736,40 +723,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
     }
 
-    if (request.action === 'validateLicense') {
-      if (!request.key) {
-        sendResponse({ valid: false, message: 'No license key provided' });
-        return true;
-      }
-      validateLicense(request.key, (result) => {
-        sendResponse(result);
-      });
-      return true;
-    }
-
-    if (request.action === 'checkLicenseStatus') {
-      chrome.storage.sync.get(['licenseStatus', 'licenseTrialStart'], (data) => {
-        try {
-          let status = data.licenseStatus || 'trial';
-          // Check if trial expired
-          if (status === 'trial' && data.licenseTrialStart) {
-            const elapsed = Date.now() - data.licenseTrialStart;
-            if (elapsed > TRIAL_PERIOD) {
-              status = 'trial_expired';
-              chrome.storage.sync.set({ licenseStatus: 'trial_expired' });
-            }
-          }
-          sendResponse({ 
-            status,
-            daysRemaining: calculateTrialDaysRemaining(data.licenseTrialStart)
-          });
-        } catch (e) {
-          logError('checkLicenseStatus failed', e);
-          sendResponse({ status: 'trial', error: 'Failed to check status' });
-        }
-      });
-      return true;
-    }
   } catch (e) {
     logError('Message handler failed', e);
     sendResponse({ error: 'Internal error' });
@@ -1015,52 +968,9 @@ function getAnalyticsReport() {
   }
 }
 
-// License validation with trial period enforcement
-function validateLicense(key, callback) {
-  try {
-    if (!key || typeof key !== 'string' || key.length < 10) {
-      callback({ valid: false, message: 'Invalid license key format' });
-      return;
-    }
-    
-    // License format: AIB-XXXXXXXXXXXXXXXXXXXXXXXX (AIB- + 20 chars)
-    const isValid = /^AIB-[A-Z0-9]{20}$/.test(key.toUpperCase());
-    
-    if (isValid) {
-      chrome.storage.sync.set({ 
-        licenseKey: key, 
-        licenseStatus: 'active',
-        licenseActivated: Date.now(),
-        licenseExpiration: Date.now() + (365 * 24 * 60 * 60 * 1000) // 1 year
-      }, () => {
-        callback({ 
-          valid: true, 
-          message: 'License activated successfully',
-          expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
-        });
-      });
-    } else {
-      callback({ valid: false, message: 'License key not recognized' });
-    }
-  } catch (e) {
-    logError('License validation failed', e);
-    callback({ valid: false, message: 'Validation error occurred' });
-  }
-}
 
-function calculateTrialDaysRemaining(trialStart) {
-  try {
-    if (!trialStart || typeof trialStart !== 'number') {
-      return 30;
-    }
-    const elapsed = Date.now() - trialStart;
-    const daysElapsed = Math.floor(elapsed / (24 * 60 * 60 * 1000));
-    const daysRemaining = Math.max(0, 30 - daysElapsed);
-    return daysRemaining;
-  } catch (e) {
-    return 30;
-  }
-}
+
+
 
 // Context menu for quick actions
 // Remove all existing context menus first to prevent duplicate ID errors
