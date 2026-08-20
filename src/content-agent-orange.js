@@ -466,6 +466,14 @@ class BinaryForensics {
     if (str.substring(0, 4) === 'Exif') {
       result.forensics.hasExif = true;
       this.checkAISignaturesInString(str, result, 'exif');
+      // Camera-manufacturer EXIF is positive HUMAN provenance: generators
+      // and screenshots never carry a real Make/Model, and stripping tools
+      // remove rather than fabricate them.
+      if (/\b(Canon|Nikon|SONY|FUJIFILM|Olympus|Panasonic|Apple|samsung|Google|Leica|PENTAX|Hasselblad|DJI|GoPro|OM Digital)\b/.test(str)) {
+        result.forensics.hasCameraExif = true;
+        result.confidence = Math.max(0, result.confidence - 0.4);
+        result.indicators.push({ indicator: 'Camera manufacturer EXIF present (human provenance)', confidence: -0.6 });
+      }
     }
     // XMP check
     else if (str.includes('xpacket') || str.includes('XMP')) {
@@ -624,8 +632,12 @@ class BinaryForensics {
         // Check for AI generation parameters
         for (const keyword of AI_SIGNATURES.pngKeywords) {
           if (str.toLowerCase().includes(keyword.toLowerCase())) {
-            result.confidence += 0.7;
-            result.indicators.push({ indicator: `PNG metadata: ${keyword}`, confidence: 0.9 });
+            // A generation key plus generation vocabulary (sampler/steps/
+            // cfg/seed/denoise) is a definitive generator signature, not a
+            // mere keyword coincidence.
+            const definitive = /\b(sampler|steps|cfg[ _]?scale|seed|denois)/i.test(str);
+            result.confidence = definitive ? Math.max(result.confidence, 0.95) : result.confidence + 0.7;
+            result.indicators.push({ indicator: `PNG metadata: ${keyword}`, confidence: definitive ? 0.97 : 0.9 });
             break;
           }
         }
