@@ -8,7 +8,7 @@ No license is granted to use, copy, modify, distribute, or create derivative wor
 Build a clean ZIP of the local unpacked extension.
 - Generates icon PNGs into images/
 - Copies only extension files into dist/webstore/
-- Produces dist/aiblocker-local.zip
+- Produces dist/slopblocker-local.zip
 
 Note: This does not run a bundler; the extension is plain JS/CSS/HTML.
 #>
@@ -18,7 +18,7 @@ $ErrorActionPreference = 'Stop'
 $Root = (Resolve-Path "$PSScriptRoot\..\").Path
 $Dist = Join-Path $Root 'dist'
 $OutDir = Join-Path $Dist 'local'
-$ZipPath = Join-Path $Dist 'aiblocker-local.zip'
+$ZipPath = Join-Path $Dist 'slopblocker-local.zip'
 
 # Generate icons (ensures manifest icons exist)
 Write-Host "Generating icons…"

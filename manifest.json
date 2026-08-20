@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "AI Content Blocker Pro",
+  "name": "SlopBlocker",
   "version": "2.0.0",
   "description": "Detects and flags likely AI-generated text, images and video on any site. Local-first and privacy-preserving; optional blur/hide modes.",
   "permissions": [
@@ -32,7 +32,7 @@
   ],
   "action": {
     "default_popup": "src/popup.html",
-    "default_title": "AI Content Blocker Pro"
+    "default_title": "SlopBlocker"
   },
   "options_page": "src/options.html",
   "icons": {

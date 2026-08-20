@@ -1,10 +1,10 @@
-# AI Content Blocker
+# SlopBlocker
 
-AI Content Blocker is a local-first Chrome extension that highlights likely AI-generated content on pages you browse. It is designed for manual installation from source, not Chrome Web Store distribution.
+SlopBlocker is a local-first Chrome extension that highlights likely AI-generated content on pages you browse. It is designed for manual installation from source, not Chrome Web Store distribution.
 
 ![Live detection on a real ad: an AI-generated image flagged at 73% confidence, with the contributing signals (AI-typical filename pattern, AI signature in webp scan) and one-click feedback](docs/screenshots/detection.png)
 
-![AI Content Blocker popup showing detection controls, confidence threshold, and crowd-learning feedback](docs/screenshots/popup.png)
+![SlopBlocker popup showing detection controls, confidence threshold, and crowd-learning feedback](docs/screenshots/popup.png)
 
 Images carrying signed [C2PA Content Credentials](https://c2pa.org/) get a
 neutral "CR" provenance chip; content the credentials can't vouch for —

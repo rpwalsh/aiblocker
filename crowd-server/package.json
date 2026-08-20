@@ -1,11 +1,11 @@
 {
-  "name": "aiblocker-crowd-server",
+  "name": "slopblocker-crowd-server",
   "version": "1.0.0",
   "author": "Ryan P. Walsh",
   "license": "UNLICENSED",
   "private": true,
   "type": "module",
-  "description": "Privacy-safe crowd learning service for AI Content Blocker Pro (votes -> aggregated feature weights).",
+  "description": "Privacy-safe crowd learning service for SlopBlocker (votes -> aggregated feature weights).",
   "main": "src/index.js",
   "scripts": {
     "dev": "node src/index.js",

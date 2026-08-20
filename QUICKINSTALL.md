@@ -1,13 +1,13 @@
 # Quick Install
 
-Use these steps to run AI Content Blocker locally in Chrome.
+Use these steps to run SlopBlocker locally in Chrome.
 
 ## 1. Prepare The Extension
 
 Open PowerShell in this folder:
 
 ```powershell
-cd C:\Users\react\OneDrive\Desktop\wtg-repos\!clean\aiblocker
+cd C:\Users\react\OneDrive\Desktop\wtg-repos\!clean\slopblocker
 powershell -ExecutionPolicy Bypass -File .\scripts\install-local.ps1
 ```
 
@@ -28,7 +28,7 @@ dist\local
 ## 3. Verify
 
 1. Open any normal website.
-2. Click the AI Content Blocker toolbar icon.
+2. Click the SlopBlocker toolbar icon.
 3. Confirm the popup opens.
 4. Click "Rescan Page".
 5. Open "Settings" and confirm Crowd Learning is off unless you choose to enable it.
