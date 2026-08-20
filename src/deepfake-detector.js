@@ -803,9 +803,10 @@ class DeepfakeDetector {
       }
 
       if (spectrum.lowHighFrequencyContent) {
-        analysis.detectedPatterns.push('Low high-frequency content (typical of AI generation)');
-        analysis.confidence += 0.25;
-        analysis.isAiGenerated = true;
+        // Smoothness is context, never a verdict: bokeh, soft focus, and
+        // heavy compression all suppress high frequencies in real footage.
+        analysis.detectedPatterns.push('Low high-frequency content (context only; also caused by soft focus/compression)');
+        analysis.confidence += 0.1;
       }
 
       if (spectrum.styleganFingerprints) {
@@ -1030,23 +1031,24 @@ class DeepfakeDetector {
       // Check for repeating patterns typical of generated content
       let periodicScore = 0;
 
-      // Analyze horizontal and vertical repeating patterns
-      for (let period = 4; period <= 32; period *= 2) {
-        let patternMatches = 0;
-
+      // Periodicity means VARIATION that recurs: strong match at the
+      // period with weak match at the half-period. Flat regions and
+      // axis-constant gradients match at every lag and must not flag.
+      for (let period = 8; period <= 32; period *= 2) {
+        const half = period / 2;
+        let atPeriod = 0;
+        let atHalf = 0;
+        let total = 0;
         for (let y = 0; y < height - period; y++) {
-          for (let x = 0; x < width - period; x++) {
-            const idx1 = y * width + x;
-            const idx2 = (y + period) * width + x;
-
-            if (Math.abs(grayscale[idx1] - grayscale[idx2]) < 5) {
-              patternMatches++;
-            }
+          for (let x = 0; x < width; x++) {
+            const idx = y * width + x;
+            total++;
+            if (Math.abs(grayscale[idx] - grayscale[idx + period * width]) < 5) atPeriod++;
+            if (Math.abs(grayscale[idx] - grayscale[idx + half * width]) < 5) atHalf++;
           }
         }
-
-        if (patternMatches > (width * height) * 0.3) {
-          periodicScore += 0.2;
+        if (total > 0 && atPeriod / total > 0.6 && atHalf / total < 0.5 * (atPeriod / total)) {
+          periodicScore += 0.35;
         }
       }
 
