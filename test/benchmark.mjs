@@ -14,7 +14,10 @@ if (!benchPath) { console.error("usage: node test/benchmark.mjs <bench.jsonl> [c
 // HC3 human answers are detokenized ("do n't", "it 's"); ChatGPT answers are
 // not. Collapse that so features measure language, not preprocessing.
 function normalizeTokenization(text) {
-  return text.replace(/\s+(n't|'s|'re|'m|'ll|'ve|'d)\b/g, "$1");
+  return text
+    .replace(/\s+(n't|'s|'re|'m|'ll|'ve|'d)\b/g, "$1")
+    .replace(/\s+([.,;:!?)\]])/g, "$1")
+    .replace(/([([])\s+/g, "$1");
 }
 const rows = readFileSync(benchPath, "utf8").trim().split("\n")
   .map(l => JSON.parse(l))
@@ -30,7 +33,8 @@ function loadScorer(name) {
     return async text => (await analyzer.analyze(text)).score ?? 0;
   }
   if (name === "slop") {
-    const src = readFileSync(path.join(here, "..", "src", "slop-score.js"), "utf8");
+    const src = readFileSync(path.join(here, "..", "src", "slop-lexicon.js"), "utf8")
+      + "\n" + readFileSync(path.join(here, "..", "src", "slop-score.js"), "utf8");
     const ctx = {};
     vm.createContext(ctx);
     vm.runInContext(src + "\nglobalThis.__score = slopScore;", ctx);

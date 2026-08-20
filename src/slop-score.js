@@ -46,6 +46,18 @@ const HUMAN_MARKERS = [
 
 const LADDER_OPENERS = /\b(firstly|secondly|thirdly|finally|first,|second,|third,|lastly)\b/gi;
 
+// Humans typo, drop apostrophes, and reach for the wrong homophone;
+// assistants essentially never do. High-precision list only.
+const TYPO_MARKERS = [
+  "definately", "recieve", "seperate", "alot", "wierd", "occured",
+  "untill", "becuase", "thier", "teh ", "tommorow", "accross",
+  "should of", "could of", "would of", "must of", "your welcome",
+  "payed", "there own", "noone", "everytime",
+  "atleast", "aswell", "eachother", "incase", "infact"
+];
+const APOSTROPHE_DROPS = /\b(dont|cant|wont|isnt|doesnt|didnt|wasnt|werent|couldnt|shouldnt|wouldnt|im|ive|youre|youve|theyre|theyve|thats|whats|heres|theres|lets)\b/g;
+const LOWERCASE_I = /(?:^|[^A-Za-z])i(?:'m|'ve|'ll|'d)?\s/g;
+
 function sentencesOf(text) {
   return (text.match(/[^.!?\n]+[.!?]+/g) || []).map(s => s.trim()).filter(s => s.length > 2);
 }
@@ -126,15 +138,58 @@ function slopScore(text) {
   const invisibles = (text.match(/[\u200B-\u200F\u2060\uFEFF\u00AD\u202A-\u202E\u2066-\u2069\uFE00-\uFE0F]/g) || []).length;
   const invisibleRate = rate(invisibles, 1000, Math.max(1, text.length));
 
+  // 9. Human error forensics: misspellings, homophone slips, dropped
+  // apostrophes, lowercase "i". Machines almost never produce these.
+  let typoHits = 0;
+  for (const marker of TYPO_MARKERS) {
+    let from = 0;
+    while (true) {
+      const at = lower.indexOf(marker, from);
+      if (at < 0) break;
+      typoHits++;
+      from = at + marker.length;
+    }
+  }
+  typoHits += (lower.match(APOSTROPHE_DROPS) || []).length;
+  typoHits += (text.match(LOWERCASE_I) || []).length;
+  const typoRate = rate(typoHits, 1000, wordCount);
+
+  // 10. Encyclopedic definition register: "Subject (ACRONYM) is a ...".
+  const acronymExpansion = (text.match(/\b[A-Z][a-z]+(?: [a-z]+){0,3} \([A-Z]{2,6}\)/g) || []).length;
+  const firstSentence = sentences[0] ?? "";
+  const definitionOpener = sentences.length >= 2
+    && /^[A-Z"'][^.!?]{2,80}\bis (a|an|the)\b/.test(firstSentence) ? 1 : 0;
+
   void secondPerson;
   void contractionRate;
+  // Weighted style-phrase lexicon (src/slop-lexicon.js) when present:
+  // per-phrase log-odds, SpamAssassin-style, fully visible.
+  let weighted = 0;
+  const weights = typeof SLOP_WEIGHTS !== "undefined" ? SLOP_WEIGHTS
+    : (typeof module !== "undefined" && (() => { try { return require("./slop-lexicon.js").SLOP_WEIGHTS; } catch { return undefined; } })());
+  if (weights) {
+    for (const [phrase, weight] of weights) {
+      let from = 0;
+      while (true) {
+        const at = lower.indexOf(phrase, from);
+        if (at < 0) break;
+        weighted += weight;
+        from = at + phrase.length;
+      }
+    }
+    weighted = rate(weighted, 1000, wordCount);
+  }
+
   const parts = {
-    slop: Math.min(3.4, slopRate * 0.52),
+    weighted: weights ? Math.max(-3.2, Math.min(3.6, weighted * 0.055)) : 0,
+    slop: Math.min(4.2, slopRate * 0.52),
     structure: Math.min(1.1, structureRate * 0.22),
     uniform: uniformOpeners > 0.4 ? (uniformOpeners - 0.4) * 2.4 : 0,
-    lowBurst: burstiness < 0.45 ? (0.45 - burstiness) * 3.0 : 0,
+    lowBurst: burstiness < 0.45 ? (0.45 - burstiness) * 3.4 : 0,
     invisible: invisibles >= 2 ? Math.min(3.5, 1.5 + invisibleRate * 0.5) : 0,
-    human: -Math.min(2.6, humanRate * 0.34)
+    encyclopedic: Math.min(1.3, acronymExpansion * 0.8 + definitionOpener * 0.55),
+    human: -Math.min(2.6, humanRate * 0.34),
+    typos: -Math.min(3.2, typoRate * 1.35)
   };
   for (const [name, value] of Object.entries(parts)) {
     if (value >= 0.25) reasons.push(`+${name}`);
