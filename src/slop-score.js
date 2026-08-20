@@ -59,6 +59,13 @@ const TYPO_MARKERS = [
 const APOSTROPHE_DROPS = /\b(dont|cant|wont|isnt|doesnt|didnt|wasnt|werent|couldnt|shouldnt|wouldnt|im|ive|youre|youve|theyre|theyve|thats|whats|heres|theres|lets)\b/g;
 const LOWERCASE_I = /(?:^|[^A-Za-z])i(?:'m|'ve|'ll|'d)?\s/g;
 
+// Channel weights fit by balanced logistic regression on the tune
+// corpora (RAID tune half + HC3 bench; see test/fetch-*.mjs) and
+// validated held-out. Published so the whole decision is auditable:
+// score = sigmoid(bias + sum(weight * channel)).
+const SCORE_WEIGHTS = { caseAnomaly: -0.001, confusable: 0.516, degeneracy: 0.48, encyclopedic: 0.041, formalHuman: -0.156, human: 0.387, invisible: 0.464, lowBurst: 0.989, slop: 0.272, structure: 0.013, stylo: 0.273, typos: 0.1, uniform: 0.195, weighted: 0.143 };
+const SCORE_BIAS = -0.653;
+
 function sentencesOf(text) {
   return (text.match(/[^.!?\n]+[.!?]+/g) || []).map(s => s.trim()).filter(s => s.length > 2);
 }
@@ -67,9 +74,30 @@ function rate(count, per, total) {
   return total > 0 ? (count * per) / total : 0;
 }
 
-function slopScore(text) {
+// Common Cyrillic/Greek homoglyphs folded to Latin so evasion cannot
+// starve the statistical channels; the substitution itself is still
+// counted by the confusable forensic before folding.
+const HOMOGLYPH_FOLD = { "а": "a", "е": "e", "о": "o", "р": "p", "с": "c", "х": "x", "і": "i", "ѕ": "s", "у": "y", "А": "A", "Е": "E", "О": "O", "Р": "P", "С": "C", "Х": "X", "І": "I", "Ѕ": "S", "ο": "o", "α": "a", "Α": "A", "Ο": "O", "Β": "B", "Ε": "E" };
+
+function foldEvasion(text) {
+  let out = "";
+  for (const ch of text) out += HOMOGLYPH_FOLD[ch] ?? ch;
+  // Strip invisibles and collapse doubled whitespace for feature
+  // extraction; the raw text was already measured by the forensics.
+  return out.replace(/[​-‏⁠﻿­‪-‮⁦-⁩︀-️]/g, "").replace(/[ \t]{2,}/g, " ");
+}
+
+function slopScore(rawText) {
   const reasons = [];
-  if (!text || text.length < 120) return { score: 0.0, isAiGenerated: false, reasons };
+  if (!rawText || rawText.length < 120) return { score: 0.0, isAiGenerated: false, reasons };
+  // Forensic counts read the RAW text; every statistical channel reads
+  // the folded text, so mangling attacks cannot starve them.
+  const rawInvisibles = (rawText.match(/[​-‏⁠﻿­‪-‮⁦-⁩︀-️]/g) || []).length;
+  const rawConfusables = (rawText.match(/[a-zA-Z][Ѐ-ӿͰ-Ͽ][a-zA-Z]|[a-zA-Z]{2}[Ѐ-ӿͰ-Ͽ]|[Ѐ-ӿͰ-Ͽ][a-zA-Z]{2}/g) || []).length;
+  // Mid-word case flips ("aBout") are an evasion signature; they also
+  // void fabricated human-error evidence below.
+  const caseAnomalies = (rawText.match(/\b[a-z]+[A-Z][a-z]*\b/g) || []).filter(w => !/^(mc|mac|i[A-Z]|e[A-Z])/.test(w)).length;
+  const text = foldEvasion(rawText);
   const lower = text.toLowerCase();
   const words = lower.match(/[a-z']+/g) || [];
   const wordCount = Math.max(1, words.length);
@@ -136,7 +164,7 @@ function slopScore(text) {
   // keyboard produces these; chat-UI copy/paste and watermark-style
   // insertion do. Presence is near-deterministic evidence of pasted
   // machine text.
-  const invisibles = (text.match(/[\u200B-\u200F\u2060\uFEFF\u00AD\u202A-\u202E\u2066-\u2069\uFE00-\uFE0F]/g) || []).length;
+  const invisibles = rawInvisibles;
   const invisibleRate = rate(invisibles, 1000, Math.max(1, text.length));
 
   // 9. Human error forensics: misspellings, homophone slips, dropped
@@ -197,7 +225,7 @@ function slopScore(text) {
 
   // Mixed-script confusables inside Latin words: homoglyph evasion is
   // itself near-deterministic evidence of adversarial machine text.
-  const confusables = (text.match(/[a-zA-Z][Ѐ-ӿͰ-Ͽ][a-zA-Z]|[a-zA-Z]{2}[Ѐ-ӿͰ-Ͽ]|[Ѐ-ӿͰ-Ͽ][a-zA-Z]{2}/g) || []).length;
+  const confusables = rawConfusables;
 
   // Weighted style-phrase lexicon (src/slop-lexicon.js) when present:
   // per-phrase log-odds, SpamAssassin-style, fully visible.
@@ -239,12 +267,13 @@ function slopScore(text) {
   const casualWeight = Math.min(1, 0.15 + contractionRate * 0.055 + humanRate * 0.16 + secondPerson * 0.035);
   
   const parts = {
-    stylo: Math.max(-2.6, Math.min(2.6, stylo * 4.2)),
+    stylo: Math.max(-3.0, Math.min(3.0, stylo * 5.5)),
     degeneracy: Math.min(2.8, degeneracy * 0.9),
     confusable: confusables >= 2 ? Math.min(3.0, 1.2 + confusables * 0.1) : 0,
+    caseAnomaly: caseAnomalies >= 3 ? Math.min(2.6, 1.0 + caseAnomalies * 0.05) : 0,
     lowBurst: burstiness < 0.45 ? (0.45 - burstiness) * 3.4 : 0,
     invisible: invisibles >= 2 ? Math.min(3.5, 1.5 + invisibleRate * 0.5) : 0,
-    typos: -Math.min(3.2, typoRate * 1.35),
+    typos: caseAnomalies >= 3 ? 0 : -Math.min(3.2, typoRate * 1.35),
     formalHuman: -Math.min(3.4, formalHumanRate * 0.55),
     weighted: weights ? casualWeight * Math.max(-3.2, Math.min(3.6, weighted * 0.055)) : 0,
     slop: casualWeight * Math.min(4.2, slopRate * 0.52),
@@ -258,15 +287,15 @@ function slopScore(text) {
     if (value <= -0.25) reasons.push(`-${name}`);
   }
 
-  const raw = Object.values(parts).reduce((a, b) => a + b, 0);
-  // Gentle squash: steep sigmoids pinned both classes at 1.0 and
-  // destroyed threshold resolution at strict false-positive budgets.
-  const score = 1 / (1 + Math.exp(-(raw - 0.8) * 0.85));
-  // Flag conservatively: 0.98 is the measured ~5% false-positive point on
-  // the held-out corpora; character forensics flag unconditionally because
-  // their false-positive rate is effectively zero. Protecting users from
-  // false accusations outranks catching every machine text.
-  const isAiGenerated = score > 0.98 || parts.invisible > 0 || parts.confusable > 0;
+  let raw = SCORE_BIAS;
+  for (const [name, value] of Object.entries(parts)) raw += (SCORE_WEIGHTS[name] ?? 0) * value;
+  const score = 1 / (1 + Math.exp(-raw));
+  // Flag conservatively: 0.712 is the measured ~5% false-positive point on
+  // the combined held-out corpora under the fitted logistic; character
+  // forensics flag unconditionally (their false-positive rate on typed
+  // text is effectively zero). Protecting users from false accusations
+  // outranks catching every machine text.
+  const isAiGenerated = score > 0.712 || parts.invisible > 0 || parts.confusable > 0;
   return { score, isAiGenerated, reasons, parts };
 }
 
