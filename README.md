@@ -26,6 +26,10 @@ The previous heuristic detector scored 0.678 on HC3 and 0.29 -- worse than chanc
 
 The channel mix is a published logistic weight table (SCORE_WEIGHTS in src/slop-score.js) fit on the tune corpora and validated held-out; evasion characters are folded before statistics so mangling cannot starve them. The default flag threshold (0.688) is the measured ~5% false-positive point: for an audience that must be protected from false accusations, precision outranks recall. Character-forensic signals (zero-width characters, mixed-script homoglyphs) flag unconditionally -- their false-positive rate on typed text is effectively zero, and each flag explains itself in plain words. Detection is probabilistic: treat every result as a lead to inspect, not a verdict.
 
+## Responsible use, privacy, and disclaimers
+
+SlopBlocker highlights signals; it does not judge people. Its output is probabilistic, has a measured error rate, and **must not be the sole basis for any accusation, grade, or adverse action** -- see [DISCLAIMER.md](DISCLAIMER.md) for the full responsible-use guidance (including for educators) and [PRIVACY.md](PRIVACY.md) for exactly what data the extension touches (short version: everything stays on your machine; the only network feature is opt-in and content-free).
+
 ## License
 
 Source-available under the [PolyForm Noncommercial License 1.0.0](LICENSE): free for personal, educational, research, and nonprofit use -- read it, run it, modify it, share it. **Commercial use requires a separate license from the author** (Ryan P. Walsh -- reach out via [GitHub](https://github.com/rpwalsh)). See [LICENSE.md](LICENSE.md) for the plain-words summary.

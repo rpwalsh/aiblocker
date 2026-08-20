@@ -365,7 +365,7 @@ class OverlaySystem {
       <div class="ao-indicators">&bull; ${indicatorText}</div>
       
       <div class="ao-vote-section">
-        <div class="ao-vote-title">Help improve detection - is this AI-generated?</div>
+        <div class="ao-vote-title">Help improve detection — does this look machine-made to you?</div>
         <div class="ao-vote-buttons">
           <button class="ao-vote-btn ai-btn" data-vote="ai">
             🤖 Yes, it's AI

@@ -21,7 +21,7 @@
  * - AI-Assisted Content (human + AI hybrid)
  * - Bot-Generated Social Media Content
  * 
- * Confidence Scoring: 0.0 (definitely human) to 1.0 (definitely AI)
+ * Confidence Scoring: 0.0 (strong human signals) to 1.0 (strong machine signals) — always probabilistic
  */
 
 'use strict';

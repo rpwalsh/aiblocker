@@ -59,10 +59,10 @@
     lastResult = r;
     const pct = Math.round(r.score * 100);
     let line = r.isAiGenerated
-      ? `Reads machine-made — ${pct}% machine-likely, ${r.findings.length} marked finding${r.findings.length === 1 ? "" : "s"}`
+      ? `Signals consistent with machine generation — ${pct}% score, ${r.findings.length} marked finding${r.findings.length === 1 ? "" : "s"}`
       : pct > 45
         ? `Uncertain — ${pct}% machine-likely; inspect the highlights`
-        : `Reads human — ${pct}% machine-likely`;
+        : `Signals consistent with human writing — ${pct}% score`;
     if (pasteProvenance) line += ` · pasted from ${pasteProvenance.name}`;
     verdictEl.textContent = line;
     verdictEl.style.background = (r.isAiGenerated || (pasteProvenance && pasteProvenance.kind === "ai-ui")) ? "#fee2e2" : pct > 45 ? "#fef3c7" : "#d1fae5";
@@ -121,7 +121,7 @@
     for (const f of r.findings) {
       lines.push(`  [${f.kind}] chars ${f.start}-${f.end}: "${lastText.slice(f.start, Math.min(f.end, f.start + 40))}" — ${f.label}`);
     }
-    lines.push("", "Every signal above is a deterministic, documented rule (no AI model was used to produce this report). Methodology: github.com/rpwalsh/slopblocker");
+    lines.push("", "Every signal above is a deterministic, documented rule (no AI model was used to produce this report).", "This report is informational only. It is not proof of authorship or misconduct, has a measured error rate (see repository README), and must not be the sole basis for any accusation, grade, or adverse action. Methodology: github.com/rpwalsh/slopblocker");
     navigator.clipboard.writeText(lines.join("\n")).then(() => {
       copyBtn.textContent = "Copied ✓";
       setTimeout(() => { copyBtn.textContent = "Copy evidence report"; }, 1500);

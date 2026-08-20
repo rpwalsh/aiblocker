@@ -65,7 +65,7 @@
     for (const f of result.findings) {
       lines.push(`  [${f.kind}] chars ${f.start}-${f.end}: "${text.slice(f.start, Math.min(f.end, f.start + 40))}" — ${f.label}`);
     }
-    lines.push("", "Every signal above is a deterministic, documented rule (no AI model was used to produce this report). Methodology: github.com/rpwalsh/slopblocker");
+    lines.push("", "Every signal above is a deterministic, documented rule (no AI model was used to produce this report).", "This report is informational only. It is not proof of authorship or misconduct, has a measured error rate (see repository README), and must not be the sole basis for any accusation, grade, or adverse action. Methodology: github.com/rpwalsh/slopblocker");
     return lines.join("\n");
   }
 
@@ -75,10 +75,10 @@
     const root = host.attachShadow({ mode: "closed" });
     const pct = Math.round(result.score * 100);
     const verdict = result.isAiGenerated
-      ? `Reads machine-made — ${pct}% with ${result.findings.length} marked finding${result.findings.length === 1 ? "" : "s"}`
+      ? `Signals consistent with machine generation — ${pct}% score, ${result.findings.length} marked finding${result.findings.length === 1 ? "" : "s"}`
       : pct > 45
         ? `Uncertain — ${pct}%; inspect the highlights`
-        : `Reads human — only ${pct}% machine-likely`;
+        : `Signals consistent with human writing — ${pct}% score`;
     const color = result.isAiGenerated ? "#dc2626" : pct > 45 ? "#d97706" : "#059669";
     root.innerHTML = `
       <div style="width:420px;max-height:70vh;overflow:auto;background:#fff;color:#111;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.25);font:13px/1.5 system-ui,sans-serif">
@@ -93,7 +93,7 @@
           <div style="white-space:pre-wrap;word-break:break-word;background:#f9fafb;border-radius:8px;padding:10px;margin-top:4px">${highlighted(text, result.findings)}</div>
           <button id="copy" style="margin-top:10px;padding:7px 12px;border:1px solid #d1d5db;border-radius:8px;background:#f3f4f6;cursor:pointer">Copy evidence report</button>
           <span id="copied" style="margin-left:8px;color:#059669;display:none">copied</span>
-          <div style="margin-top:8px;font-size:11px;color:#6b7280">Every highlight is a documented deterministic rule — nothing here was judged by an AI. A lead to inspect, not a verdict.</div>
+          <div style="margin-top:8px;font-size:11px;color:#6b7280">Every highlight is a documented deterministic rule — nothing here was judged by an AI. A lead to inspect, not a verdict. This is not proof of authorship or misconduct and must not be the sole basis for any accusation or adverse action.</div>
         </div>
       </div>`;
     root.getElementById("x").onclick = () => host.remove();
