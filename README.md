@@ -13,16 +13,18 @@ unsigned, stripped, or undisclosed — still gets scored and badged.
 
 ## Measured accuracy
 
-The text scorer (`src/slop-score.js`) is fully transparent -- every signal is a named, human-auditable statistic (a published weighted style-phrase lexicon, sentence-length burstiness, structural cadence, opener uniformity, invisible/zero-width character forensics, human-error forensics -- typos, homophone slips, dropped apostrophes -- and casual-register counter-evidence). No neural model, no network call, no training data shipped.
+The text scorer (`src/slop-score.js`) is fully transparent -- every signal is a named, human-auditable statistic: Burrows-Delta stylometry over a published function-word table (`src/slop-stylometry.js`), a published weighted style-phrase lexicon (`src/slop-lexicon.js`), sentence-length burstiness, degenerate-repetition statistics, structural cadence, invisible/zero-width character forensics, mixed-script homoglyph forensics, human-error forensics (typos, homophone slips, dropped apostrophes), and formal-register counter-evidence. No neural model, no network call, no training data shipped.
 
-Benchmarked with `test/benchmark.mjs` on the public HC3 human-vs-ChatGPT corpus (tokenization-normalized; rebuild the data with `test/fetch-bench.mjs`):
+Held-out results (`test/benchmark.mjs`; corpora rebuilt by `test/fetch-bench.mjs`, tokenization-normalized so no detector can score dataset preprocessing):
 
-| Detector | Held-out AUROC | Best accuracy | TPR @ 5% FPR |
+| Corpus | AUROC | Best accuracy | TPR @ 5% FPR |
 |---|---|---|---|
-| slop-score (current) | **0.958** | 90.0% | 78.8% |
-| legacy heuristics | 0.678 | 76.7% | 2.8% |
+| HC3 (chat-register human vs ChatGPT) | **0.912** | 84.9% | 55.8% |
+| RAID (11 generators, 3 domains, incl. adversarial attacks) | **0.705** | 91.7% | 16.8% |
 
-To our knowledge this is the strongest published fully-transparent, rule-based (non-ML) AI-text detector; trained-model services (GPTZero, Pangram, Originality) score higher on public benchmarks but are neither local, inspectable, nor free of network calls. Detection is probabilistic: treat every result as a lead to inspect, not a verdict.
+The previous heuristic detector scored 0.678 on HC3 and 0.29 -- worse than chance -- on RAID formal domains. For context, the RAID benchmark paper reports commercial trained detectors also degrading toward chance under these adversarial attacks.
+
+The default flag threshold (0.98) is the measured ~5% false-positive point: for an audience that must be protected from false accusations, precision outranks recall. Character-forensic signals (zero-width characters, mixed-script homoglyphs) flag unconditionally -- their false-positive rate on typed text is effectively zero, and each flag explains itself in plain words. Detection is probabilistic: treat every result as a lead to inspect, not a verdict.
 
 ## Rights Notice
 

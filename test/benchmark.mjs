@@ -33,7 +33,8 @@ function loadScorer(name) {
     return async text => (await analyzer.analyze(text)).score ?? 0;
   }
   if (name === "slop") {
-    const src = readFileSync(path.join(here, "..", "src", "slop-lexicon.js"), "utf8")
+    const src = readFileSync(path.join(here, "..", "src", "slop-stylometry.js"), "utf8")
+      + "\n" + readFileSync(path.join(here, "..", "src", "slop-lexicon.js"), "utf8")
       + "\n" + readFileSync(path.join(here, "..", "src", "slop-score.js"), "utf8");
     const ctx = {};
     vm.createContext(ctx);

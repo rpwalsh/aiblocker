@@ -160,8 +160,44 @@ function slopScore(text) {
   const definitionOpener = sentences.length >= 2
     && /^[A-Z"'][^.!?]{2,80}\bis (a|an|the)\b/.test(firstSentence) ? 1 : 0;
 
-  void secondPerson;
-  void contractionRate;
+  // Burrows-Delta stylometry (src/slop-stylometry.js when present):
+  // distance to the published human vs machine function-word centroids.
+  // Function words are topic-free, so this channel survives domain shift
+  // that breaks phrase lexicons.
+  let stylo = 0;
+  const styloTable = typeof STYLO_TABLE !== "undefined" ? STYLO_TABLE
+    : (typeof module !== "undefined" && (() => { try { return require("./slop-stylometry.js").STYLO_TABLE; } catch { return undefined; } })());
+  if (styloTable && wordCount >= 60) {
+    const counts = {};
+    for (const w of words) counts[w] = (counts[w] ?? 0) + 1;
+    let dH = 0;
+    let dA = 0;
+    for (const t of styloTable) {
+      const f = ((counts[t.w] ?? 0) * 1000) / wordCount;
+      dH += Math.abs(f - t.h) / t.sd;
+      dA += Math.abs(f - t.a) / t.sd;
+    }
+    stylo = (dH - dA) / styloTable.length;
+  }
+
+  // Degenerate repetition: sampling-mode generators loop trigrams no
+  // human writer repeats.
+  let degeneracy = 0;
+  if (words.length >= 60) {
+    const tri = {};
+    let maxTri = 0;
+    for (let i = 0; i + 2 < words.length; i++) {
+      const key = words[i] + " " + words[i + 1] + " " + words[i + 2];
+      tri[key] = (tri[key] ?? 0) + 1;
+      if (tri[key] > maxTri) maxTri = tri[key];
+    }
+    degeneracy = rate(Math.max(0, maxTri - 2), 1000, words.length);
+  }
+
+  // Mixed-script confusables inside Latin words: homoglyph evasion is
+  // itself near-deterministic evidence of adversarial machine text.
+  const confusables = (text.match(/[a-zA-Z][Ѐ-ӿͰ-Ͽ][a-zA-Z]|[a-zA-Z]{2}[Ѐ-ӿͰ-Ͽ]|[Ѐ-ӿͰ-Ͽ][a-zA-Z]{2}/g) || []).length;
+
   // Weighted style-phrase lexicon (src/slop-lexicon.js) when present:
   // per-phrase log-odds, SpamAssassin-style, fully visible.
   let weighted = 0;
@@ -180,16 +216,41 @@ function slopScore(text) {
     weighted = rate(weighted, 1000, wordCount);
   }
 
+  // Formal-human counter-evidence: citations, bracketed references, URLs,
+  // parenthesized years, inline numbers with units. Formal HUMAN prose
+  // (abstracts, news, books) produces these; generators mostly do not.
+  // This is what stops the phrase channels misreading formal humans as
+  // machines, without blinding them to chat-register machine text.
+  const formalHumanHits =
+    (text.match(/\[\d{1,3}\]/g) || []).length
+    + (text.match(/\((?:19|20)\d{2}[a-z]?\)/g) || []).length
+    + (text.match(/\bhttps?:\/\/|\bdoi\.org|\bwww\./gi) || []).length
+    + (text.match(/\bet al\.?/gi) || []).length
+    + (text.match(/\b(?:Fig\.|Figure \d|Table \d|Eq\.)/g) || []).length
+    + (text.match(/\bpp?\.\s?\d/g) || []).length;
+  const formalHumanRate = rate(formalHumanHits, 1000, wordCount);
+
+  // Register gate: phrase channels only apply to conversational text
+  // (contractions, casual markers, or second-person address — chat
+  // assistants say "you" incessantly). Formal prose of either class is
+  // judged solely by register-free channels; register cannot separate
+  // classes when the register IS the domain.
+  const casualWeight = Math.min(1, 0.15 + contractionRate * 0.055 + humanRate * 0.16 + secondPerson * 0.035);
+  
   const parts = {
-    weighted: weights ? Math.max(-3.2, Math.min(3.6, weighted * 0.055)) : 0,
-    slop: Math.min(4.2, slopRate * 0.52),
-    structure: Math.min(1.1, structureRate * 0.22),
-    uniform: uniformOpeners > 0.4 ? (uniformOpeners - 0.4) * 2.4 : 0,
+    stylo: Math.max(-2.6, Math.min(2.6, stylo * 4.2)),
+    degeneracy: Math.min(2.8, degeneracy * 0.9),
+    confusable: confusables >= 2 ? Math.min(3.0, 1.2 + confusables * 0.1) : 0,
     lowBurst: burstiness < 0.45 ? (0.45 - burstiness) * 3.4 : 0,
     invisible: invisibles >= 2 ? Math.min(3.5, 1.5 + invisibleRate * 0.5) : 0,
-    encyclopedic: Math.min(1.3, acronymExpansion * 0.8 + definitionOpener * 0.55),
-    human: -Math.min(2.6, humanRate * 0.34),
-    typos: -Math.min(3.2, typoRate * 1.35)
+    typos: -Math.min(3.2, typoRate * 1.35),
+    formalHuman: -Math.min(3.4, formalHumanRate * 0.55),
+    weighted: weights ? casualWeight * Math.max(-3.2, Math.min(3.6, weighted * 0.055)) : 0,
+    slop: casualWeight * Math.min(4.2, slopRate * 0.52),
+    structure: casualWeight * Math.min(1.1, structureRate * 0.22),
+    uniform: uniformOpeners > 0.4 ? casualWeight * (uniformOpeners - 0.4) * 2.4 : 0,
+    encyclopedic: casualWeight * Math.min(1.3, acronymExpansion * 0.8 + definitionOpener * 0.55),
+    human: -Math.min(2.6, humanRate * 0.34)
   };
   for (const [name, value] of Object.entries(parts)) {
     if (value >= 0.25) reasons.push(`+${name}`);
@@ -197,8 +258,15 @@ function slopScore(text) {
   }
 
   const raw = Object.values(parts).reduce((a, b) => a + b, 0);
-  const score = 1 / (1 + Math.exp(-(raw - 0.35) * 2.2));
-  return { score, isAiGenerated: score > 0.5, reasons, parts };
+  // Gentle squash: steep sigmoids pinned both classes at 1.0 and
+  // destroyed threshold resolution at strict false-positive budgets.
+  const score = 1 / (1 + Math.exp(-(raw - 0.8) * 0.85));
+  // Flag conservatively: 0.98 is the measured ~5% false-positive point on
+  // the held-out corpora; character forensics flag unconditionally because
+  // their false-positive rate is effectively zero. Protecting users from
+  // false accusations outranks catching every machine text.
+  const isAiGenerated = score > 0.98 || parts.invisible > 0 || parts.confusable > 0;
+  return { score, isAiGenerated, reasons, parts };
 }
 
 if (typeof module !== "undefined" && module.exports) module.exports = { slopScore };
