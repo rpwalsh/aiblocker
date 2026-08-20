@@ -99,9 +99,11 @@ for (const rel of allJs) {
   assert(!/import\s*\(\s*["']https?:\/\//.test(text), `${rel} must not import remote code`);
 }
 
-for (const rel of ['src/background.js', 'src/popup.js', 'src/options.js']) {
+// Crowd learning was removed entirely: the extension must make no
+// network requests of its own. Assert the code is absent, not disabled.
+for (const rel of ['src/background.js', 'src/popup.js', 'src/options.js', 'src/overlay-system.js']) {
   const text = read(rel);
-  assert(/crowdLearningEnabled:\s*false/.test(text), `${rel} must default crowd learning to false`);
+  assert(!/crowdLearning|submitCrowdVote|\/v1\/vote/.test(text), `${rel} must contain no crowd-learning code`);
 }
 
 const popup = read('src/popup.js');

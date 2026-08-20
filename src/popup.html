@@ -1,111 +1,70 @@
 <!--
-  Copyright (c) 2026 Ryan P. Walsh. Licensed under PolyForm Noncommercial 1.0.0; commercial use requires a separate license from the author. See LICENSE.
+  Copyright (c) 2026 Ryan P. Walsh
+  SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Content Blocker</title>
+  <title>SlopBlocker</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>AI Content Blocker</h1>
+  <header>
+    <div class="brand">
+      <h1>SlopBlocker</h1>
+      <span class="tagline">signals, not verdicts</span>
     </div>
+    <label class="switch" title="Enable detection">
+      <input type="checkbox" id="enabled">
+      <span class="track"></span>
+    </label>
+  </header>
 
-    <div class="content">
-      <div class="settings">
-        <div class="setting-group main-toggle">
-          <label class="toggle-label">
-            <input type="checkbox" id="enabled" class="toggle-input">
-            <span class="toggle-switch"></span>
-            <span>Detection Enabled</span>
-          </label>
-        </div>
+  <section class="hero">
+    <div class="count" id="statsDetected">0</div>
+    <div class="count-label">flagged on this page</div>
+    <button id="rescan" class="ghost">Rescan</button>
+  </section>
 
-        <div class="setting-group">
-          <label class="checkbox-label">
-            <input type="checkbox" id="blockImages">
-            <span>Scan Images</span>
-          </label>
-        </div>
-
-        <div class="setting-group">
-          <label class="checkbox-label">
-            <input type="checkbox" id="blockText">
-            <span>Scan Text</span>
-          </label>
-        </div>
-
-        <div class="setting-group">
-          <label class="checkbox-label">
-            <input type="checkbox" id="blockVideo">
-            <span>Scan Video</span>
-          </label>
-        </div>
-
-        <div class="setting-group">
-          <label for="confidence">Detection Confidence:</label>
-          <div class="slider-container">
-            <input type="range" id="confidence" min="0.3" max="0.9" step="0.1" value="0.5">
-            <span id="confidenceValue">50%</span>
-          </div>
-          <small>Lower = catch more, Higher = stricter</small>
-        </div>
-
-        <div class="setting-group">
-          <label for="blockingMode">On match:</label>
-          <select id="blockingMode" class="select">
-            <option value="none">Do nothing (badge only)</option>
-            <option value="blur">Blur</option>
-            <option value="watermark">Watermark</option>
-            <option value="hide">Hide</option>
-          </select>
-        </div>
-
-        <div class="setting-group">
-          <label class="checkbox-label">
-            <input type="checkbox" id="crowdLearningEnabled">
-            <span>Enable Crowd Learning</span>
-          </label>
-          <small>Uploads only explicit feedback (hashed feature IDs; no URLs/content)</small>
-        </div>
-      </div>
-
-      <div class="stats">
-        <div class="stat">
-          <span class="stat-value" id="statsDetected">0</span>
-          <span class="stat-label">AI items detected on page</span>
-        </div>
-      </div>
-
-      <div class="details" id="details">
-        <div class="details-header">
-          <span class="details-title">Why flagged</span>
-          <button id="refreshDetails" class="btn-link" type="button">Refresh</button>
-        </div>
-        <div class="details-body" id="detailsBody">
-          <div class="details-empty">Open a page and click an outlined item to see details here.</div>
-        </div>
-        <div class="details-actions">
-          <button id="voteAI" type="button" class="btn-small">Upvote AI</button>
-          <button id="voteNotAI" type="button" class="btn-small btn-secondary">Downvote Not AI</button>
-        </div>
-        <div class="details-actions">
-          <button id="toggleLearningMode" type="button" class="btn-small btn-secondary">Initialize Learning Mode</button>
-        </div>
-      </div>
+  <section class="card">
+    <div class="card-title">Scan</div>
+    <div class="chips">
+      <label class="chip"><input type="checkbox" id="blockText"><span>Text</span></label>
+      <label class="chip"><input type="checkbox" id="blockImages"><span>Images</span></label>
+      <label class="chip"><input type="checkbox" id="blockVideo"><span>Video</span></label>
     </div>
-
-    <div class="footer">
-      <button id="openChecker" class="btn-options">Paste Checker</button>
-      <button id="openOptions" class="btn-options">Settings</button>
-      <button id="rescan" class="btn-rescan">Rescan Page</button>
+    <div class="row">
+      <label for="confidence">Sensitivity</label>
+      <input type="range" id="confidence" min="0.3" max="0.9" step="0.1" value="0.5">
+      <span id="confidenceValue" class="mono">50%</span>
     </div>
-  </div>
+    <div class="row">
+      <label for="blockingMode">On match</label>
+      <select id="blockingMode">
+        <option value="none">Badge only</option>
+        <option value="blur">Blur</option>
+        <option value="watermark">Watermark</option>
+        <option value="hide">Hide</option>
+      </select>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-title-row">
+      <div class="card-title">Why flagged</div>
+      <button id="refreshDetails" class="link">refresh</button>
+    </div>
+    <div id="detailsBody" class="details">
+      <div class="empty">Click an outlined item on the page, or select text and right-click → Inspect with SlopBlocker.</div>
+    </div>
+  </section>
+
+  <footer>
+    <button id="openChecker" class="primary">Open Paste Checker</button>
+    <button id="openOptions" class="ghost">Settings</button>
+  </footer>
+  <div class="legal">A lead to inspect, not a verdict — see DISCLAIMER in the repository.</div>
 
   <script src="popup.js"></script>
 </body>

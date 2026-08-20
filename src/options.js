@@ -14,9 +14,7 @@ const DEFAULT_SETTINGS = {
   blockVideo: false,
   blockingMode: 'none',
   confidence: 0.5,
-  whitelistedDomains: [],
-  crowdLearningEnabled: false,
-  crowdLearningEndpoint: ''
+  whitelistedDomains: []
 };
 
 // DOM elements
@@ -32,8 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
   elements.confidence = document.getElementById('confidence');
   elements.confidenceValue = document.getElementById('confidenceValue');
   elements.whitelistedDomains = document.getElementById('whitelistedDomains');
-  elements.crowdLearningEnabled = document.getElementById('crowdLearningEnabled');
-  elements.crowdLearningEndpoint = document.getElementById('crowdLearningEndpoint');
   elements.save = document.getElementById('save');
   elements.reset = document.getElementById('reset');
   elements.statusText = document.getElementById('statusText');
@@ -59,8 +55,6 @@ function loadSettings() {
       elements.blockingMode.value = ['none', 'blur', 'watermark', 'hide'].includes(v) ? v : 'none';
     }
     elements.confidence.value = settings.confidence || 0.5;
-    elements.crowdLearningEnabled.checked = settings.crowdLearningEnabled === true;
-    elements.crowdLearningEndpoint.value = settings.crowdLearningEndpoint || '';
     
     if (settings.whitelistedDomains && settings.whitelistedDomains.length > 0) {
       elements.whitelistedDomains.value = settings.whitelistedDomains.join('\n');
@@ -91,9 +85,7 @@ function saveSettings() {
     blockVideo: elements.blockVideo.checked,
     blockingMode,
     confidence: parseFloat(elements.confidence.value),
-    whitelistedDomains,
-    crowdLearningEnabled: elements.crowdLearningEnabled.checked,
-    crowdLearningEndpoint: elements.crowdLearningEndpoint.value.trim()
+    whitelistedDomains
   };
 
   chrome.storage.sync.set(settings, () => {
@@ -117,8 +109,6 @@ function resetSettings() {
       elements.blockVideo.checked = DEFAULT_SETTINGS.blockVideo;
       if (elements.blockingMode) elements.blockingMode.value = DEFAULT_SETTINGS.blockingMode;
       elements.confidence.value = DEFAULT_SETTINGS.confidence;
-      elements.crowdLearningEnabled.checked = DEFAULT_SETTINGS.crowdLearningEnabled;
-      elements.crowdLearningEndpoint.value = DEFAULT_SETTINGS.crowdLearningEndpoint;
       elements.whitelistedDomains.value = '';
       updateConfidenceDisplay();
       showStatus('Settings reset!', 'success');

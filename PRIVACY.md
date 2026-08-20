@@ -15,25 +15,11 @@ the source code in this repository.
 - Settings and local statistics live in your browser's extension storage
   on your device.
 
-## The one optional network feature: crowd learning (off by default)
+## Network: none
 
-If — and only if — you explicitly enable crowd learning and configure an
-endpoint, the extension uploads votes of the following shape and nothing
-else:
-
-- a coarse vote ("ai" / "not_ai"),
-- schema-controlled feature identifiers (fixed token strings defined in
-  the source code — never page content, never text, never URLs, never
-  domains),
-- optional on-device-hashed subfeature tokens (the server never sees the
-  raw strings),
-- a day bucket and a rotating daily cohort value (no stable user id),
-- an optional content identifier hashed together with the day so it
-  cannot be linked across days.
-
-The upload code path enforces an allowlist pattern on every identifier
-before anything leaves the device (`src/background.js`). No account, no
-email, no cookies, no analytics, no third-party services.
+The former opt-in crowd-learning feature has been removed. The extension
+makes no network requests of its own; feedback you give on flags is
+stored only on your device.
 
 ## Permissions, explained
 
@@ -46,6 +32,5 @@ email, no cookies, no analytics, no third-party services.
 
 ## Data requests
 
-There is nothing to request: the author operates no server that receives
-your content, and the optional crowd endpoint (if you run one) receives
-only the token shapes described above.
+There is nothing to request: no server operated by the author ever
+receives your content or your activity.

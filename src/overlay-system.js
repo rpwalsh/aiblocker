@@ -7,7 +7,7 @@
 
 /**
  * ============================================================================
- * OVERLAY SYSTEM v2.3 - Fixed Position Badges + Crowd Learning
+ * OVERLAY SYSTEM v2.3 - Fixed Position Badges + Local Feedback
  * ============================================================================
  */
 
@@ -431,18 +431,19 @@ class OverlaySystem {
           indicators: indicators.map(i => i?.indicator).filter(Boolean),
         };
         
-        // Send to background script for crowd learning
-        chrome.runtime.sendMessage({ 
-          action: 'submitCrowdVote', 
-          payload: voteData 
-        }, (response) => {
-          if (response?.success) {
-            statusEl.textContent = '✓ Vote submitted! Thanks for helping.';
-            setTimeout(() => this.closePopover(), 1500);
-          } else {
-            statusEl.textContent = '✓ Vote recorded locally.';
-            setTimeout(() => this.closePopover(), 1500);
+        // Stored locally only; nothing leaves the device.
+        chrome.runtime.sendMessage({
+          action: 'recordUserFeedback',
+          data: {
+            ts: Date.now(),
+            label: voteData.vote === 'ai' ? 'confirm_ai' : 'dismiss_not_ai',
+            confidence: voteData.confidence,
+            featureIds: voteData.featureIds
           }
+        }, () => {
+          void chrome.runtime.lastError;
+          statusEl.textContent = '✓ Feedback saved on this device.';
+          setTimeout(() => this.closePopover(), 1500);
         });
       } catch (err) {
         statusEl.textContent = '✓ Vote saved.';

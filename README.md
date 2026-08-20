@@ -4,7 +4,7 @@ SlopBlocker is a local-first Chrome extension that highlights likely AI-generate
 
 ![Live detection on a real ad: an AI-generated image flagged at 73% confidence, with the contributing signals (AI-typical filename pattern, AI signature in webp scan) and one-click feedback](docs/screenshots/detection.png)
 
-![SlopBlocker popup showing detection controls, confidence threshold, and crowd-learning feedback](docs/screenshots/popup.png)
+![SlopBlocker popup showing detection controls, confidence threshold, and local feedback](docs/screenshots/popup.png)
 
 Images carrying signed [C2PA Content Credentials](https://c2pa.org/) get a
 neutral "CR" provenance chip; content the credentials can't vouch for —
@@ -28,7 +28,7 @@ The channel mix is a published logistic weight table (SCORE_WEIGHTS in src/slop-
 
 ## Responsible use, privacy, and disclaimers
 
-SlopBlocker highlights signals; it does not judge people. Its output is probabilistic, has a measured error rate, and **must not be the sole basis for any accusation, grade, or adverse action** -- see [DISCLAIMER.md](DISCLAIMER.md) for the full responsible-use guidance (including for educators) and [PRIVACY.md](PRIVACY.md) for exactly what data the extension touches (short version: everything stays on your machine; the only network feature is opt-in and content-free).
+SlopBlocker highlights signals; it does not judge people. Its output is probabilistic, has a measured error rate, and **must not be the sole basis for any accusation, grade, or adverse action** -- see [DISCLAIMER.md](DISCLAIMER.md) for the full responsible-use guidance (including for educators) and [PRIVACY.md](PRIVACY.md) for exactly what data the extension touches (short version: everything stays on your machine; the extension makes no network requests of its own).
 
 ## License
 
@@ -42,8 +42,6 @@ Source-available under the [PolyForm Noncommercial License 1.0.0](LICENSE): free
 - Supports badge-only mode by default, plus optional blur, watermark, or hide modes.
 - Provides popup controls for detection, image/text/video scanning, sensitivity, rescan, and settings.
 - Supports local feedback logs so users can mark detections as AI or not AI.
-- Includes optional crowd-learning support for self-hosted endpoints. This is disabled by default.
-- Includes an optional crowd-learning server for aggregate feature votes and signed model updates.
 - Builds a clean unpacked extension folder for local Chrome loading.
 - Includes release gates for manifest integrity, permissions, syntax checks, privacy defaults, and server dependency audit.
 
@@ -91,20 +89,6 @@ npm test
 
 The old simulated E2E script has been replaced with a manual checklist in [test/manual-e2e-checklist.md](test/manual-e2e-checklist.md). Do not treat manual checklist items as automated proof.
 
-## Crowd Server
-
-The crowd server is optional. It is not required for local extension use.
-
-To test it:
-
-```powershell
-cd crowd-server
-npm ci
-cd ..
-powershell -ExecutionPolicy Bypass -File .\scripts\test-release.ps1 -WithCrowdServerSelfTest
-```
-
-For a real deployment, generate your own signing keys and keep private keys out of the repository. Do not ship `.env`, `.dev-keys`, sqlite databases, or `node_modules`.
 
 ## Limitations
 

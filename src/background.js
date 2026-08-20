@@ -48,14 +48,6 @@ const DEFAULT_SETTINGS = {
   blockVideo: false,
   blockVideos: false,
   enableDeepfakeScan: false,
-  // Crowd learning (OPT-IN): when enabled, the extension can
-  // (a) upload privacy-safe feature votes only on explicit user feedback, and
-  // (b) download signed heuristic deltas.
-  crowdLearningEnabled: false,
-  crowdLearningEndpoint: '',
-  // Optional: hashed subfeature learning. Still privacy-safe (hashes only), but
-  // increases cardinality and should be used conservatively.
-  crowdLearningSubfeaturesEnabled: false,
   version: '2.0.0'
 };
 
@@ -90,7 +82,7 @@ function logError(context, error) {
 }
 
 // ============================================================================
-// PRIVACY-SAFE CROWD LEARNING HELPERS
+// LOCAL FEEDBACK HELPERS
 // ============================================================================
 
 async function sha256Base64Url(input) {
@@ -111,70 +103,6 @@ function getDayBucket(ts = Date.now()) {
   return Math.floor(ts / (24 * 60 * 60 * 1000));
 }
 
-// Rotating, non-unique cohort to help server-side rate limiting without identity.
-async function getOrCreateDailyCohort(dayBucket) {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(['aoCrowdCohortDay', 'aoCrowdCohort'], async (store) => {
-      try {
-        if (store.aoCrowdCohortDay === dayBucket && typeof store.aoCrowdCohort === 'number') {
-          resolve(store.aoCrowdCohort);
-          return;
-        }
-        const raw = new Uint32Array(1);
-        crypto.getRandomValues(raw);
-        const cohort = Number(raw[0] % 4096); // 0..4095
-        chrome.storage.local.set({ aoCrowdCohortDay: dayBucket, aoCrowdCohort: cohort }, () => resolve(cohort));
-      } catch {
-        resolve(0);
-      }
-    });
-  });
-}
-
-async function buildCrowdVotePacket(feedback) {
-  // IMPORTANT: do not include URL, domain, raw content, or any stable ids.
-  const day = getDayBucket(feedback?.ts || Date.now());
-  const cohort = await getOrCreateDailyCohort(day);
-
-  const rawFeatureIds = Array.isArray(feedback?.featureIds) ? feedback.featureIds : [];
-
-  // Only allow schema-like IDs for network upload.
-  const cleaned = rawFeatureIds
-    .map(x => (typeof x === 'string' ? x.trim() : ''))
-    .filter(Boolean)
-    .filter(x => /^[a-zA-Z0-9:_\-\.]{1,140}$/.test(x));
-
-  // Always upload node:* and any explicit deepfake/video feature IDs.
-  const nodeOnly = cleaned.filter(x => x.startsWith('node:') || x.startsWith('df:') || x.startsWith('vid:'));
-
-  // Optionally include hashed subfeatures (sf:*) when enabled.
-  // Subfeatures MUST be hashed on-device into sf:<b64url> so the server never sees raw strings.
-  // We only accept sf:* here if it appears already hashed.
-  const subfeatures = cleaned.filter(x => x.startsWith('sf:'));
-
-  const featureIds = [...new Set([...nodeOnly, ...subfeatures])].slice(0, 32);
-
-  const vote = feedback?.label === 'confirm_ai' ? 'ai' : (feedback?.label === 'dismiss_not_ai' ? 'not_ai' : null);
-  if (!vote) return null;
-
-  // Optional: contentId is local-only; to avoid linkability, hash it with day.
-  let cid = null;
-  if (feedback?.contentId) {
-    cid = await sha256Base64Url(`${day}:${String(feedback.contentId)}`);
-  }
-
-  return {
-    v: 1,
-    day,
-    cohort,
-    vote,
-  // Feature IDs are schema-controlled strings (not user content)
-    featureIds,
-    // Confidence is coarse and optional (bucketed)
-    conf: typeof feedback?.confidence === 'number' ? Math.round(feedback.confidence * 10) / 10 : null,
-    cid,
-  };
-}
 
 // Initialize extension
 chrome.runtime.onInstalled.addListener((details) => {
@@ -202,176 +130,6 @@ chrome.runtime.onInstalled.addListener((details) => {
   }
 });
 
-// Periodic crowd model refresh (opt-in only)
-try {
-  chrome.alarms.create('aoCrowdModelRefresh', { periodInMinutes: 60 * 6 }); // every 6 hours
-} catch {
-  // ignore
-}
-
-chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm?.name === 'aoCrowdModelRefresh') {
-    refreshCrowdModelIfEnabled();
-  }
-});
-
-async function refreshCrowdModelIfEnabled() {
-  return new Promise((resolve) => {
-    chrome.storage.sync.get(['crowdLearningEnabled', 'crowdLearningEndpoint'], async (syncSettings) => {
-      try {
-        if (syncSettings?.crowdLearningEnabled !== true) return resolve(false);
-        const endpoint = (syncSettings?.crowdLearningEndpoint || '').trim();
-        if (!endpoint) return resolve(false);
-
-        const url = `${endpoint.replace(/\/$/, '')}/v1/model`;
-        const resp = await fetch(url, {
-          method: 'GET',
-          cache: 'no-store',
-          credentials: 'omit',
-          mode: 'cors',
-          redirect: 'follow',
-          referrerPolicy: 'no-referrer',
-        });
-        if (!resp.ok) return resolve(false);
-
-        const model = await resp.json();
-
-        const payload = {
-          version: Number(model?.version) || 0,
-          featureWeights: (model?.featureWeights && typeof model.featureWeights === 'object') ? model.featureWeights : {},
-        };
-
-        const signature = typeof model?.signature === 'string' ? model.signature : '';
-        const alg = typeof model?.alg === 'string' ? model.alg : '';
-        const kid = typeof model?.kid === 'string' ? model.kid : '';
-
-        const verified = await verifyCrowdModelSignature(payload, signature, { alg, kid });
-
-        // Only store/apply verified models.
-        if (!verified) return resolve(false);
-
-        // Anti-rollback: never accept a verified model older than what we already have.
-        const current = await new Promise((r) => {
-          chrome.storage.local.get(['aoCrowdModel'], (s) => r(s?.aoCrowdModel || null));
-        });
-        const currentVersion = Number(current?.version) || 0;
-        if (payload.version && currentVersion && payload.version < currentVersion) {
-          return resolve(false);
-        }
-
-        const safeModel = {
-          ...payload,
-          fetchedAt: Date.now(),
-          verified: true,
-          alg: alg || 'RS256',
-          kid: kid || null,
-        };
-
-        chrome.storage.local.set({ aoCrowdModel: safeModel }, () => resolve(true));
-      } catch (e) {
-        logError('refreshCrowdModelIfEnabled failed', e);
-        resolve(false);
-      }
-    });
-  });
-}
-
-// Pinned RSA public key (PEM) used to verify server-signed models.
-// Replace with your real public key (generated from the server private key).
-const CROWD_MODEL_PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----
-REPLACE_ME_WITH_YOUR_PUBLIC_KEY
------END PUBLIC KEY-----`;
-
-// Optional: bind verification to an expected key id (kid).
-// If configured and the server returns a different kid, verification fails.
-// This prevents downgrade/rotation attacks where an attacker serves a different
-// signed model from an unexpected key.
-const CROWD_MODEL_EXPECTED_KID = '';
-
-// Store and compare the public-key fingerprint (TOFU pinning) to detect key swaps.
-// This is a "gold nugget" defense: if a key ever changes, we fail closed.
-// It helps even if a developer forgets to pin the exact PEM in builds.
-async function sha256Hex(buf) {
-  const digest = await crypto.subtle.digest('SHA-256', buf);
-  const bytes = new Uint8Array(digest);
-  return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-function base64UrlToUint8Array(b64url) {
-  const b64 = String(b64url || '').replace(/-/g, '+').replace(/_/g, '/');
-  const padded = b64 + '==='.slice((b64.length + 3) % 4);
-  const bin = atob(padded);
-  const out = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-  return out;
-}
-
-function makeCanonicalModelString(payload) {
-  const version = Number(payload?.version) || 0;
-  const fw = payload?.featureWeights && typeof payload.featureWeights === 'object' ? payload.featureWeights : {};
-  const keys = Object.keys(fw).sort();
-  const ordered = {};
-  for (const k of keys) ordered[k] = fw[k];
-  return JSON.stringify({ version, featureWeights: ordered });
-}
-
-async function importRsaPublicKey(pem) {
-  const cleaned = pem
-    .replace(/-----BEGIN PUBLIC KEY-----/g, '')
-    .replace(/-----END PUBLIC KEY-----/g, '')
-    .replace(/\s+/g, '');
-  const der = Uint8Array.from(atob(cleaned), (c) => c.charCodeAt(0));
-  return crypto.subtle.importKey(
-    'spki',
-    der,
-    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-    false,
-    ['verify']
-  );
-}
-
-async function verifyCrowdModelSignature(payload, signatureB64Url, meta = {}) {
-  try {
-    // Bind algorithm if provided.
-    if (meta?.alg && meta.alg !== 'RS256') return false;
-    // Bind key id if configured.
-    if (CROWD_MODEL_EXPECTED_KID && meta?.kid && meta.kid !== CROWD_MODEL_EXPECTED_KID) return false;
-
-    // Guard: don’t accept placeholder key.
-    if (CROWD_MODEL_PUBLIC_KEY_PEM.includes('REPLACE_ME_WITH_YOUR_PUBLIC_KEY')) return false;
-    if (!signatureB64Url) return false;
-
-    // TOFU pinning: detect if the configured key changes over time.
-    const cleaned = CROWD_MODEL_PUBLIC_KEY_PEM
-      .replace(/-----BEGIN PUBLIC KEY-----/g, '')
-      .replace(/-----END PUBLIC KEY-----/g, '')
-      .replace(/\s+/g, '');
-    const der = Uint8Array.from(atob(cleaned), (c) => c.charCodeAt(0));
-    const fp = await sha256Hex(der);
-    const pinnedOk = await new Promise((resolve) => {
-      chrome.storage.local.get(['aoCrowdKeyFp'], (store) => {
-        try {
-          const prev = store?.aoCrowdKeyFp;
-          if (!prev) {
-            chrome.storage.local.set({ aoCrowdKeyFp: fp }, () => resolve(true));
-            return;
-          }
-          resolve(prev === fp);
-        } catch {
-          resolve(false);
-        }
-      });
-    });
-    if (!pinnedOk) return false;
-
-    const key = await importRsaPublicKey(CROWD_MODEL_PUBLIC_KEY_PEM);
-    const msg = new TextEncoder().encode(makeCanonicalModelString(payload));
-    const sig = base64UrlToUint8Array(signatureB64Url);
-    return await crypto.subtle.verify({ name: 'RSASSA-PKCS1-v1_5' }, key, sig, msg);
-  } catch {
-    return false;
-  }
-}
 
 // Migrate settings from old versions
 function migrateSettings() {
@@ -430,22 +188,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     }
 
-    // ---------------------------------------------------------------------
-    // Compatibility shim: overlay popover uses submitCrowdVote
-    // Map it onto the existing feedback pipeline (recordUserFeedback) so the
-    // vote is stored locally and (if opt-in) uploaded to the crowd endpoint.
-    // ---------------------------------------------------------------------
-    if (request.action === 'submitCrowdVote') {
-      try {
-        const data = request?.payload || request?.data || {};
-        // Re-dispatch internally so we keep one canonical implementation.
-        request = { action: 'recordUserFeedback', data };
-      } catch {
-        sendResponse({ success: false, error: 'Invalid payload' });
-        return true;
-      }
-    }
-
     if (request.action === 'getSettings') {
       chrome.storage.sync.get(null, (response) => {
         try {
@@ -461,8 +203,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           }
 
           // Ensure new media toggles have safe defaults even if storage is old.
-          if (typeof response.crowdLearningEnabled === 'undefined') response.crowdLearningEnabled = DEFAULT_SETTINGS.crowdLearningEnabled;
-          if (typeof response.crowdLearningEndpoint === 'undefined') response.crowdLearningEndpoint = DEFAULT_SETTINGS.crowdLearningEndpoint;
           if (typeof response.blockVideo === 'undefined') response.blockVideo = DEFAULT_SETTINGS.blockVideo;
           if (typeof response.blockVideos === 'undefined') response.blockVideos = response.blockVideo;
           if (typeof response.blockAudio === 'undefined') response.blockAudio = true;
@@ -475,38 +215,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         } catch (e) {
           logError('getSettings failed', e);
           sendResponse(DEFAULT_SETTINGS);
-        }
-      });
-      return true;
-    }
-
-    if (request.action === 'getCrowdModel') {
-      chrome.storage.local.get(['aoCrowdModel'], (store) => {
-        try {
-          sendResponse(store.aoCrowdModel || { version: 0, featureWeights: {}, verified: false });
-        } catch (e) {
-          logError('getCrowdModel failed', e);
-          sendResponse({ version: 0, featureWeights: {}, verified: false });
-        }
-      });
-      return true;
-    }
-
-    if (request.action === 'getCrowdSecurityStatus') {
-      chrome.storage.local.get(['aoCrowdModel', 'aoCrowdKeyFp'], (store) => {
-        try {
-          const m = store?.aoCrowdModel || null;
-          sendResponse({
-            verified: !!m?.verified,
-            version: Number(m?.version) || 0,
-            fetchedAt: Number(m?.fetchedAt) || 0,
-            alg: (typeof m?.alg === 'string' && m.alg) ? m.alg : null,
-            kid: (typeof m?.kid === 'string' && m.kid) ? m.kid : null,
-            keyFp: (typeof store?.aoCrowdKeyFp === 'string' && store.aoCrowdKeyFp) ? store.aoCrowdKeyFp : null,
-          });
-        } catch (e) {
-          logError('getCrowdSecurityStatus failed', e);
-          sendResponse({ verified: false, version: 0, fetchedAt: 0, alg: null, kid: null, keyFp: null });
         }
       });
       return true;
@@ -637,32 +345,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               aoFeedbackLog: log,
               aoDomainPriors: priors,
             }, () => sendResponse({ success: true, domain }));
-
-            // Upload privacy-safe crowd vote ONLY if user opted in.
-            chrome.storage.sync.get(['crowdLearningEnabled', 'crowdLearningEndpoint'], async (syncSettings) => {
-              try {
-                if (syncSettings?.crowdLearningEnabled !== true) return;
-                const endpoint = (syncSettings?.crowdLearningEndpoint || '').trim();
-                if (!endpoint) return;
-
-                const packet = await buildCrowdVotePacket(fb);
-                if (!packet) return;
-
-                // Fire-and-forget. Do not include URL or any identity info.
-                fetch(`${endpoint.replace(/\/$/, '')}/v1/vote`, {
-                  method: 'POST',
-                  headers: { 'content-type': 'application/json' },
-                  body: JSON.stringify(packet),
-                  cache: 'no-store',
-                  credentials: 'omit',
-                  mode: 'cors',
-                  redirect: 'follow',
-                  referrerPolicy: 'no-referrer',
-                }).catch(() => { /* ignore */ });
-              } catch {
-                // ignore
-              }
-            });
           } catch (e) {
             logError('recordUserFeedback storage update failed', e);
             sendResponse({ success: false });
@@ -677,10 +359,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     // -----------------------------------------------------------------------
-    // Feature-level votes (from overlay popover)
-    // - UI allows up/down per feature then "Apply"
-    // - We store locally (debug) and optionally upload a privacy-safe packet
-    //   by mapping the feature-level feedback to the existing /v1/vote schema.
+    // Feature-level votes (from overlay popover): stored locally only.
     // -----------------------------------------------------------------------
     if (request.action === 'recordFeatureVotes') {
       try {
@@ -717,29 +396,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           } catch (e) {
             logError('recordFeatureVotes storage failed', e);
             sendResponse({ success: false });
-          }
-        });
-
-        // Optional crowd upload.
-        chrome.storage.sync.get(['crowdLearningEnabled', 'crowdLearningEndpoint'], async (syncSettings) => {
-          try {
-            if (syncSettings?.crowdLearningEnabled !== true) return;
-            const endpoint = (syncSettings?.crowdLearningEndpoint || '').trim();
-            if (!endpoint) return;
-            const packet = await buildCrowdVotePacket(feedback);
-            if (!packet) return;
-            fetch(`${endpoint.replace(/\/$/, '')}/v1/vote`, {
-              method: 'POST',
-              headers: { 'content-type': 'application/json' },
-              body: JSON.stringify(packet),
-              cache: 'no-store',
-              credentials: 'omit',
-              mode: 'cors',
-              redirect: 'follow',
-              referrerPolicy: 'no-referrer',
-            }).catch(() => { /* ignore */ });
-          } catch {
-            // ignore
           }
         });
 

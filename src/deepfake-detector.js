@@ -128,7 +128,7 @@ class DeepfakeDetector {
         analysisTime: 0,
 
         // Structured, privacy-safe feature ids (schema tokens only)
-        // Used for evidence fusion + (opt-in) crowd learning.
+        // Used for evidence fusion and local feedback.
         featureIds: []
       };
 

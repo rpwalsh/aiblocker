@@ -132,17 +132,6 @@ label {
   margin-left: 0;
 }
 
-.ao-crowd-status {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-  font-size: 12px;
-  color: #444;
-  background: #fafafa;
-  border: 1px solid #e6e6e6;
-  border-radius: 8px;
-  padding: 10px;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
 
 .slider-container {
   display: flex;
