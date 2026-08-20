@@ -722,9 +722,19 @@ class AgentOrange {
       indicators.push({ indicator: 'AI community context', confidence: scores.community.score });
     }
 
-    // Fuse all evidence
-    const confidence = this.fuseEvidence(scores, text.length);
-    
+    // 14. Benchmarked slop scorer (src/slop-score.js, test/benchmark.mjs:
+    // 0.92 AUROC held-out on HC3 vs 0.68 legacy fusion). It leads; legacy
+    // fusion may raise the floor but never drags a strong verdict down.
+    let confidence = this.fuseEvidence(scores, text.length);
+    if (typeof slopScore === "function") {
+      const slop = slopScore(text);
+      scores.slop = slop;
+      if (slop.reasons.length) {
+        indicators.push({ indicator: `Slop score ${slop.score.toFixed(2)} (${slop.reasons.join(", ")})`, confidence: slop.score });
+      }
+      confidence = Math.max(slop.score, Math.min(confidence, slop.score + 0.25));
+    }
+
     return {
       confidence: Math.min(1, Math.max(0, confidence)),
       isAI: confidence > 0.5,

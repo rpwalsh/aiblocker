@@ -10,6 +10,20 @@ Images carrying signed [C2PA Content Credentials](https://c2pa.org/) get a
 neutral "CR" provenance chip; content the credentials can't vouch for —
 unsigned, stripped, or undisclosed — still gets scored and badged.
 
+
+## Measured accuracy
+
+The text scorer (`src/slop-score.js`) is fully transparent -- every signal is a named, human-auditable statistic (slop-lexicon rate, sentence-length burstiness, structural cadence, opener uniformity, invisible/zero-width character forensics, casual-register counter-evidence). No neural model, no network call, no training data shipped.
+
+Benchmarked with `test/benchmark.mjs` on the public HC3 human-vs-ChatGPT corpus (tokenization-normalized; rebuild the data with `test/fetch-bench.mjs`):
+
+| Detector | Held-out AUROC | Best accuracy | TPR @ 5% FPR |
+|---|---|---|---|
+| slop-score (current) | **0.922** | 85.6% | 67.3% |
+| legacy heuristics | 0.678 | 76.7% | 2.8% |
+
+To our knowledge this is the strongest published fully-transparent, rule-based (non-ML) AI-text detector; trained-model services (GPTZero, Pangram, Originality) score higher on public benchmarks but are neither local, inspectable, nor free of network calls. Detection is probabilistic: treat every result as a lead to inspect, not a verdict.
+
 ## Rights Notice
 
 Copyright (c) 2026 Ryan P. Walsh. All rights reserved.
