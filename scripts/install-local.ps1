@@ -1,7 +1,7 @@
+# Copyright (c) 2026 Ryan P. Walsh
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 <#
-Copyright (c) 2026 Ryan P. Walsh. All rights reserved.
-Proprietary commercial software published for public reference only.
-No license is granted to use, copy, modify, distribute, or create derivative works.
+Copyright (c) 2026 Ryan P. Walsh. Licensed under PolyForm Noncommercial 1.0.0; commercial use requires a separate license from the author. See LICENSE.
 #>
 
 param(

@@ -1,11 +1,10 @@
-Copyright (c) 2026 Ryan P. Walsh. All rights reserved.
+# License
 
-This repository is published for public viewing and professional reference only.
+SlopBlocker is source-available under the [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/) -- see [LICENSE](LICENSE) for the full text.
 
-No license is granted to use, copy, modify, merge, distribute, sublicense, sell, deploy, or create derivative works from this software or its associated materials, in whole or in part, without prior written permission from Ryan P. Walsh.
+**In plain words:**
 
-This codebase contains proprietary commercial software and is not open source.
+- Personal, educational, research, hobby, and nonprofit use: free -- use it, read it, modify it, share it.
+- **Commercial use requires a separate license from the author.** Contact Ryan P. Walsh via [GitHub](https://github.com/rpwalsh) to arrange one.
 
-Possession of or access to the source code does not convey any right to reproduce, use, or exploit the software for any purpose.
-
-Third-party components remain subject to their own applicable licenses.
+Note: because commercial use is restricted, this is "source-available" rather than OSI-definition open source. The code is public, auditable, and free for people; companies pay.

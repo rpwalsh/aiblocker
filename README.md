@@ -26,13 +26,10 @@ The previous heuristic detector scored 0.678 on HC3 and 0.29 -- worse than chanc
 
 The default flag threshold (0.98) is the measured ~5% false-positive point: for an audience that must be protected from false accusations, precision outranks recall. Character-forensic signals (zero-width characters, mixed-script homoglyphs) flag unconditionally -- their false-positive rate on typed text is effectively zero, and each flag explains itself in plain words. Detection is probabilistic: treat every result as a lead to inspect, not a verdict.
 
-## Rights Notice
+## License
 
-Copyright (c) 2026 Ryan P. Walsh. All rights reserved.
+Source-available under the [PolyForm Noncommercial License 1.0.0](LICENSE): free for personal, educational, research, and nonprofit use -- read it, run it, modify it, share it. **Commercial use requires a separate license from the author** (Ryan P. Walsh -- reach out via [GitHub](https://github.com/rpwalsh)). See [LICENSE.md](LICENSE.md) for the plain-words summary.
 
-This repository is published for public viewing and professional reference only. No license is granted to use, copy, modify, distribute, deploy, or create derivative works from this software without prior written permission from Ryan P. Walsh. This codebase is proprietary commercial software and is not open source. See [LICENSE.md](LICENSE.md).
-
-The extension works as a signal highlighter: it looks for text, image, media provenance, metadata, and page-context indicators, then shows badges and optional visual treatments. It does not claim certainty. Treat every result as a lead to inspect, not a final judgment.
 
 ## Features
 
