@@ -3639,6 +3639,27 @@ try {
         return;
       }
 
+      if (request.action === 'analyzeAudio') {
+        // Explicit user-triggered audio forensics on the most prominent
+        // playing media element. Async: keep the channel open.
+        (async () => {
+          try {
+            const media = [...document.querySelectorAll('video, audio')]
+              .filter(m => !m.paused && !m.muted)
+              .sort((a, b) => ((b.clientWidth || 0) * (b.clientHeight || 0)) - ((a.clientWidth || 0) * (a.clientHeight || 0)))[0]
+              ?? document.querySelector('video, audio');
+            if (!media) { sendResponse({ available: false, signals: [{ signal: 'no-media', detail: 'No audio or video element found on this page' }] }); return; }
+            const result = typeof analyzeMediaElementAudio === 'function'
+              ? await analyzeMediaElementAudio(media)
+              : { available: false, signals: [{ signal: 'unsupported', detail: 'Audio forensics module not loaded' }] };
+            sendResponse(result);
+          } catch (e) {
+            sendResponse({ available: false, signals: [{ signal: 'error', detail: String(e && e.message || e) }] });
+          }
+        })();
+        return true;
+      }
+
       if (request.action === 'rescan') {
         agentOrangeNuclear?.clearAllOverlays();
         if (agentOrangeNuclear) {

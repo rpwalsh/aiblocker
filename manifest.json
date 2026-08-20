@@ -21,6 +21,7 @@
   "all_frames": true,
       "js": [
         "src/slop-stylometry.js",
+        "src/audio-forensics.js",
         "src/slop-lexicon.js",
         "src/slop-score.js",
         "src/agent-orange.js",
