@@ -19,12 +19,12 @@ Held-out results (`test/benchmark.mjs`; corpora rebuilt by `test/fetch-bench.mjs
 
 | Corpus | AUROC | Best accuracy | TPR @ 5% FPR |
 |---|---|---|---|
-| HC3 (chat-register human vs ChatGPT) | **0.919** | 83.6% | 68.0% |
-| RAID (11 generators, 3 domains, incl. adversarial attacks) | **0.778** | 91.7% | 44.5% |
+| HC3 (chat-register human vs ChatGPT) | **0.919** | 84.1% | 63.7% |
+| RAID (11 generators, 3 domains, incl. adversarial attacks) | **0.801** | 92.8% | 40.6% |
 
 The previous heuristic detector scored 0.678 on HC3 and 0.29 -- worse than chance -- on RAID formal domains. For context, the RAID benchmark paper reports commercial trained detectors also degrading toward chance under these adversarial attacks.
 
-The channel mix is a published logistic weight table (SCORE_WEIGHTS in src/slop-score.js) fit on the tune corpora and validated held-out; evasion characters are folded before statistics so mangling cannot starve them. The default flag threshold (0.712) is the measured ~5% false-positive point: for an audience that must be protected from false accusations, precision outranks recall. Character-forensic signals (zero-width characters, mixed-script homoglyphs) flag unconditionally -- their false-positive rate on typed text is effectively zero, and each flag explains itself in plain words. Detection is probabilistic: treat every result as a lead to inspect, not a verdict.
+The channel mix is a published logistic weight table (SCORE_WEIGHTS in src/slop-score.js) fit on the tune corpora and validated held-out; evasion characters are folded before statistics so mangling cannot starve them. The default flag threshold (0.688) is the measured ~5% false-positive point: for an audience that must be protected from false accusations, precision outranks recall. Character-forensic signals (zero-width characters, mixed-script homoglyphs) flag unconditionally -- their false-positive rate on typed text is effectively zero, and each flag explains itself in plain words. Detection is probabilistic: treat every result as a lead to inspect, not a verdict.
 
 ## License
 

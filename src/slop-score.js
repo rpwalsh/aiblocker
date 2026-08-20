@@ -63,8 +63,8 @@ const LOWERCASE_I = /(?:^|[^A-Za-z])i(?:'m|'ve|'ll|'d)?\s/g;
 // corpora (RAID tune half + HC3 bench; see test/fetch-*.mjs) and
 // validated held-out. Published so the whole decision is auditable:
 // score = sigmoid(bias + sum(weight * channel)).
-const SCORE_WEIGHTS = { caseAnomaly: -0.001, confusable: 0.516, degeneracy: 0.48, encyclopedic: 0.041, formalHuman: -0.156, human: 0.387, invisible: 0.464, lowBurst: 0.989, slop: 0.272, structure: 0.013, stylo: 0.273, typos: 0.1, uniform: 0.195, weighted: 0.143 };
-const SCORE_BIAS = -0.653;
+const SCORE_WEIGHTS = { caseAnomaly: 0.004, confusable: 0.491, degeneracy: 0.397, encyclopedic: 0.038, formalHuman: -0.234, human: 0.387, invisible: -0.073, lowBurst: 1.165, lowParaBurst: 0.343, slop: 0.268, structure: -0.015, stylo: 0.176, typos: 0.085, uniform: 0.195, weighted: 0.057 };
+const SCORE_BIAS = -0.612;
 
 function sentencesOf(text) {
   return (text.match(/[^.!?\n]+[.!?]+/g) || []).map(s => s.trim()).filter(s => s.length > 2);
@@ -142,6 +142,15 @@ function slopScore(rawText) {
     burstiness = mean > 0 ? sd / mean : 1;
   }
 
+  // 4b. Paragraph burstiness: uniform paragraph lengths read machine-steady.
+  let paraBurstiness = 1;
+  const paragraphs = text.split(/\n\s*\n+/).map(p => (p.match(/\S+/g) || []).length).filter(n => n >= 8);
+  if (paragraphs.length >= 3) {
+    const pm = paragraphs.reduce((a, b) => a + b, 0) / paragraphs.length;
+    const psd = Math.sqrt(paragraphs.reduce((a, b) => a + (b - pm) ** 2, 0) / paragraphs.length);
+    paraBurstiness = pm > 0 ? psd / pm : 1;
+  }
+
   // 5. Structural cadence: enumeration ladders, not-X-but-Y, triads.
   const ladder = (text.match(LADDER_OPENERS) || []).length;
   const notButY = (lower.match(/\bnot (only|just|merely)\b[^.!?]{0,60}\bbut\b/g) || []).length;
@@ -201,8 +210,11 @@ function slopScore(rawText) {
     for (const w of words) counts[w] = (counts[w] ?? 0) + 1;
     let dH = 0;
     let dA = 0;
+    const chars = Math.max(1, text.length);
     for (const t of styloTable) {
-      const f = ((counts[t.w] ?? 0) * 1000) / wordCount;
+      const f = t.w.startsWith("#")
+        ? (((text.split(t.w.slice(1)).length - 1) * 1000) / chars)
+        : (((counts[t.w] ?? 0) * 1000) / wordCount);
       dH += Math.abs(f - t.h) / t.sd;
       dA += Math.abs(f - t.a) / t.sd;
     }
@@ -272,6 +284,7 @@ function slopScore(rawText) {
     confusable: confusables >= 2 ? Math.min(3.0, 1.2 + confusables * 0.1) : 0,
     caseAnomaly: caseAnomalies >= 3 ? Math.min(2.6, 1.0 + caseAnomalies * 0.05) : 0,
     lowBurst: burstiness < 0.45 ? (0.45 - burstiness) * 3.4 : 0,
+    lowParaBurst: paragraphs.length >= 3 && paraBurstiness < 0.35 ? (0.35 - paraBurstiness) * 3.0 : 0,
     invisible: invisibles >= 2 ? Math.min(3.5, 1.5 + invisibleRate * 0.5) : 0,
     typos: caseAnomalies >= 3 ? 0 : -Math.min(3.2, typoRate * 1.35),
     formalHuman: -Math.min(3.4, formalHumanRate * 0.55),
@@ -290,12 +303,12 @@ function slopScore(rawText) {
   let raw = SCORE_BIAS;
   for (const [name, value] of Object.entries(parts)) raw += (SCORE_WEIGHTS[name] ?? 0) * value;
   const score = 1 / (1 + Math.exp(-raw));
-  // Flag conservatively: 0.712 is the measured ~5% false-positive point on
+  // Flag conservatively: 0.688 is the measured ~5% false-positive point on
   // the combined held-out corpora under the fitted logistic; character
   // forensics flag unconditionally (their false-positive rate on typed
   // text is effectively zero). Protecting users from false accusations
   // outranks catching every machine text.
-  const isAiGenerated = score > 0.712 || parts.invisible > 0 || parts.confusable > 0;
+  const isAiGenerated = score > 0.688 || parts.invisible > 0 || parts.confusable > 0;
   return { score, isAiGenerated, reasons, parts };
 }
 
