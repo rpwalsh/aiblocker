@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<!--
+  Copyright (c) 2026 Ryan P. Walsh
+  SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+-->
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>SlopBlocker Checker</title>
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 14px/1.55 system-ui, sans-serif; color: #111; background: #f3f4f6; }
+    header { display: flex; align-items: baseline; gap: 12px; padding: 14px 20px; background: #fff; border-bottom: 1px solid #e5e7eb; }
+    header h1 { font-size: 16px; margin: 0; }
+    header span { color: #6b7280; font-size: 12px; }
+    main { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 14px 20px; height: calc(100vh - 54px); }
+    .col { display: flex; flex-direction: column; min-height: 0; }
+    textarea { flex: 1; resize: none; padding: 12px; border: 1px solid #d1d5db; border-radius: 10px; font: 13px/1.6 ui-monospace, monospace; }
+    #verdict { padding: 10px 12px; border-radius: 10px; margin-bottom: 8px; font-weight: 600; background: #e5e7eb; }
+    #rhythm { display: flex; align-items: flex-end; gap: 2px; height: 46px; margin-bottom: 8px; }
+    #rhythm div { flex: 1; background: #60a5fa; border-radius: 1px; }
+    #evidence { flex: 1; overflow: auto; background: #fff; border: 1px solid #d1d5db; border-radius: 10px; padding: 12px; white-space: pre-wrap; word-break: break-word; font: 13px/1.7 ui-monospace, monospace; }
+    mark { padding: 0 2px; border-radius: 3px; }
+    button { margin-top: 8px; padding: 8px 14px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; cursor: pointer; align-self: flex-start; }
+    .note { font-size: 11px; color: #6b7280; margin-top: 6px; }
+    .legend { font-size: 11px; color: #374151; margin-bottom: 6px; }
+    .legend mark { margin-right: 6px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>SlopBlocker Checker</h1>
+    <span>paste text — every highlight is a documented deterministic rule; no AI judges this text</span>
+  </header>
+  <main>
+    <div class="col">
+      <textarea id="input" placeholder="Paste the text to inspect (essays, posts, emails). Nothing leaves this tab — no network, no storage." spellcheck="false"></textarea>
+    </div>
+    <div class="col">
+      <div id="verdict">Waiting for text (needs at least 120 characters)…</div>
+      <div class="legend">
+        <mark style="background:#7c3aed;color:#fff">hidden char</mark>
+        <mark style="background:#dc2626;color:#fff">look-alike / case flip</mark>
+        <mark style="background:#fbbf24;color:#1f2937">assistant phrasing</mark>
+        <mark style="background:#34d399;color:#064e3b">human register</mark>
+        <mark style="background:#10b981;color:#fff">human slip</mark>
+      </div>
+      <div id="rhythm"></div>
+      <div id="evidence"></div>
+      <button id="copy">Copy evidence report</button>
+      <div class="note">Score is a lead to inspect, not a verdict. Flag threshold 69% is the measured 5% false-positive point on held-out benchmarks (see the repository README).</div>
+    </div>
+  </main>
+  <script src="slop-stylometry.js"></script>
+  <script src="slop-lexicon.js"></script>
+  <script src="slop-score.js"></script>
+  <script src="checker.js"></script>
+</body>
+</html>

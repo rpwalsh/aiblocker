@@ -78,6 +78,10 @@ document.addEventListener('DOMContentLoaded', () => {
     chrome.runtime.openOptionsPage();
   });
 
+  document.getElementById('openChecker')?.addEventListener('click', () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL('src/checker.html') });
+  });
+
   function getBlockingModeValue() {
     const v = elements.blockingMode?.value || 'none';
     return ['none', 'blur', 'watermark', 'hide'].includes(v) ? v : 'none';
