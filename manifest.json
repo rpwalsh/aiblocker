@@ -24,6 +24,7 @@
         "src/audio-forensics.js",
         "src/slop-lexicon.js",
         "src/slop-score.js",
+        "src/evidence-panel.js",
         "src/agent-orange.js",
   "src/content.js",
         "src/overlay-system.js",

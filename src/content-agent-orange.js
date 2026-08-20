@@ -3639,6 +3639,13 @@ try {
         return;
       }
 
+      if (request.action === 'inspectSelection') {
+        const sel = String(window.getSelection() || '');
+        if (window.__slopEvidencePanel) window.__slopEvidencePanel.inspect(sel);
+        sendResponse({ ok: true });
+        return;
+      }
+
       if (request.action === 'analyzeAudio') {
         // Explicit user-triggered audio forensics on the most prominent
         // playing media element. Async: keep the channel open.

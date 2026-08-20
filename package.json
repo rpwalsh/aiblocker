@@ -6,7 +6,7 @@
   "private": true,
   "description": "Local-first AI content signal highlighter for manual Chrome installation.",
   "scripts": {
-    "test": "node test/release-gates.test.js && node test/unit.test.js && node test/integration.test.js && node test/binary-forensics.test.mjs && node test/deepfake-spectrum.test.mjs && node test/audio-forensics.test.mjs",
+    "test": "node test/release-gates.test.js && node test/unit.test.js && node test/integration.test.js && node test/binary-forensics.test.mjs && node test/deepfake-spectrum.test.mjs && node test/audio-forensics.test.mjs && node test/evidence-explain.test.mjs",
     "release:check": "powershell -ExecutionPolicy Bypass -File scripts/test-release.ps1",
     "install:local": "powershell -ExecutionPolicy Bypass -File scripts/install-local.ps1",
     "bench:fetch": "node test/fetch-bench.mjs && node test/fetch-bench.mjs holdout && node test/fetch-raid.mjs",

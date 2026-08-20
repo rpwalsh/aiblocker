@@ -87,9 +87,11 @@ function foldEvasion(text) {
   return out.replace(/[​-‏⁠﻿­‪-‮⁦-⁩︀-️]/g, "").replace(/[ \t]{2,}/g, " ");
 }
 
-function slopScore(rawText) {
+function slopScore(rawText, options) {
+  const explain = !!(options && options.explain);
+  const findings = [];
   const reasons = [];
-  if (!rawText || rawText.length < 120) return { score: 0.0, isAiGenerated: false, reasons };
+  if (!rawText || rawText.length < 120) return { score: 0.0, isAiGenerated: false, reasons, findings };
   // Forensic counts read the RAW text; every statistical channel reads
   // the folded text, so mangling attacks cannot starve them.
   const rawInvisibles = (rawText.match(/[​-‏⁠﻿­‪-‮⁦-⁩︀-️]/g) || []).length;
@@ -97,6 +99,11 @@ function slopScore(rawText) {
   // Mid-word case flips ("aBout") are an evasion signature; they also
   // void fabricated human-error evidence below.
   const caseAnomalies = (rawText.match(/\b[a-z]+[A-Z][a-z]*\b/g) || []).filter(w => !/^(mc|mac|i[A-Z]|e[A-Z])/.test(w)).length;
+  if (explain) {
+    for (const m of rawText.matchAll(/[​-‏⁠﻿­‪-‮⁦-⁩︀-️]/g)) findings.push({ start: m.index, end: m.index + m[0].length, kind: "invisible", label: "Hidden character U+" + m[0].codePointAt(0).toString(16).toUpperCase().padStart(4, "0") + " — no keyboard types this" });
+    for (const m of rawText.matchAll(/[Ѐ-ӿͰ-Ͽ]/g)) { if (/[a-zA-Z]/.test(rawText[m.index-1]||"") || /[a-zA-Z]/.test(rawText[m.index+1]||"")) findings.push({ start: m.index, end: m.index + 1, kind: "confusable", label: "Look-alike letter from another alphabet inside a word — evasion signature" }); }
+    for (const m of rawText.matchAll(/[a-z]+[A-Z][a-z]*/g)) { if (!/^(mc|mac)/.test(m[0])) findings.push({ start: m.index, end: m.index + m[0].length, kind: "caseAnomaly", label: "Mid-word case flip — evasion signature" }); }
+  }
   const text = foldEvasion(rawText);
   const lower = text.toLowerCase();
   const words = lower.match(/[a-z']+/g) || [];
@@ -111,6 +118,7 @@ function slopScore(rawText) {
       const at = lower.indexOf(phrase, from);
       if (at < 0) break;
       slopHits++;
+      if (explain) findings.push({ start: at, end: at + phrase.length, kind: "slop", label: "Assistant-typical phrasing" });
       from = at + phrase.length;
     }
   }
@@ -124,6 +132,7 @@ function slopScore(rawText) {
       const at = lower.indexOf(phrase, from);
       if (at < 0) break;
       humanHits++;
+      if (explain) findings.push({ start: at, end: at + phrase.length, kind: "humanTell", label: "Casual human register" });
       from = at + phrase.length;
     }
   }
@@ -185,9 +194,11 @@ function slopScore(rawText) {
       const at = lower.indexOf(marker, from);
       if (at < 0) break;
       typoHits++;
+      if (explain) findings.push({ start: at, end: at + marker.length, kind: "humanError", label: "Human slip (typo/homophone) — machines rarely make these" });
       from = at + marker.length;
     }
   }
+  if (explain) { for (const m of lower.matchAll(APOSTROPHE_DROPS)) findings.push({ start: m.index, end: m.index + m[0].length, kind: "humanError", label: "Dropped apostrophe — human typing tell" }); }
   typoHits += (lower.match(APOSTROPHE_DROPS) || []).length;
   typoHits += (text.match(LOWERCASE_I) || []).length;
   const typoRate = rate(typoHits, 1000, wordCount);
@@ -309,7 +320,8 @@ function slopScore(rawText) {
   // text is effectively zero). Protecting users from false accusations
   // outranks catching every machine text.
   const isAiGenerated = score > 0.688 || parts.invisible > 0 || parts.confusable > 0;
-  return { score, isAiGenerated, reasons, parts };
+  const sentenceLengths = explain ? sentences.map(s => (s.match(/S+/g) || []).length) : undefined;
+  return { score, isAiGenerated, reasons, parts, findings, sentenceLengths, burstiness };
 }
 
 if (typeof module !== "undefined" && module.exports) module.exports = { slopScore };

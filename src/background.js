@@ -1010,7 +1010,7 @@ chrome.contextMenus.removeAll(() => {
   try {
     chrome.contextMenus.create({
       id: 'analyzeSelection',
-      title: 'Analyze with AI Blocker',
+      title: 'Inspect with SlopBlocker',
       contexts: ['selection']
     }, () => {
       // Check for errors but don't crash if it already exists
@@ -1022,18 +1022,11 @@ chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.onClicked.addListener((info, tab) => {
       try {
         if (info.menuItemId === 'analyzeSelection') {
-          const selectedText = info.selectionText;
-          if (selectedText && typeof selectedText === 'string') {
-            analyzeContent(selectedText, 'text', (result) => {
-              if (tab && tab.id) {
-                chrome.tabs.sendMessage(tab.id, {
-                  action: 'showAnalysisResult',
-                  result
-                }).catch(() => {
-                  // Tab may not be accessible
-                });
-              }
-            });
+          // The content script re-reads its own selection: exact bytes
+          // (including invisible characters) survive, where
+          // info.selectionText collapses whitespace.
+          if (tab && tab.id) {
+            chrome.tabs.sendMessage(tab.id, { action: 'inspectSelection' }).catch(() => {});
           }
         }
       } catch (e) {
